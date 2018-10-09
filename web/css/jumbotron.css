@@ -1,0 +1,15 @@
+/* Move down content because we have a fixed navbar that is 50px tall */
+body {
+  padding-top: 50px;
+  padding-bottom: 20px;
+  background-color:black;
+  color:white;
+}
+.starter-template {
+  padding: 40px 15px;
+  text-align: justify;
+}
+
+input{
+  color:black;
+}
