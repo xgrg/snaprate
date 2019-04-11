@@ -13,7 +13,7 @@ import json
 from tornado.options import define, options
 import logging as log
 
-define("port", default=8891, help="run on the given port", type=int)
+define("port", default=8890, help="run on the given port", type=int)
 
 
 def collect_snapshots(fp='/tmp/snapshots.json'):
@@ -41,7 +41,7 @@ def collect_snapshots(fp='/tmp/snapshots.json'):
             for mode in modes:
                 fn = ft%(mode, s)
                 snapshots[s].append(glob(fn)[0][len(dd):][1:])
-        json.dump(snapshots, open(fp,'w'), indent=4)
+        json.dump(snapshots, open(fp, 'w'), indent=4)
         log.info('Saving file %s...'%fp)
 
     else:
@@ -71,7 +71,7 @@ class AuthLoginHandler(BaseHandler):
         self.render("html/login.html", errormessage = errormessage)
 
     def check_permission(self, password, username):
-        users = ['greg', 'raffaele', 'oriol', 'gonzalo', 'juando', 'carles']
+        users = ['greg', 'raffaele', 'oriol', 'gonzalo', 'juando', 'carles', 'jordi']
         log.info('Default users: %s'%users)
         for each in users:
             if username == each and password == each:
@@ -79,8 +79,8 @@ class AuthLoginHandler(BaseHandler):
         return False
 
     def post(self):
-        username = self.get_argument("username", "")
-        password = self.get_argument("password", "")
+        username = str(self.get_argument("username", ""))
+        password = str(self.get_argument("password", ""))
         auth = self.check_permission(password, username)
         if auth:
             self.set_current_user(username)
@@ -98,7 +98,7 @@ class AuthLoginHandler(BaseHandler):
 
 class PostHandler(BaseHandler):
     def post(self):
-        username = self.current_user[1:-1]
+        username = str(self.current_user[1:-1], 'utf-8')
         n_subjects = len(self.snapshots.keys())
         n_snapshots = 3
         log.info('User %s has given following scores: %s'
@@ -135,7 +135,8 @@ class PostHandler(BaseHandler):
 class MainHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
-        username = self.current_user[1:-1]
+        username = str(self.current_user[1:-1], 'utf-8')
+        print(username)
         n_subjects = len(self.snapshots.keys())
         n_snapshots = 3
 
@@ -152,8 +153,8 @@ class MainHandler(BaseHandler):
         html = ''
         for i, (s, imgs) in enumerate(self.snapshots.items()):
             for j, img in enumerate(imgs):
-                img_code = '<img class="subject%s" id="image%s" '\
-                    'style="height:900px; width:1250px; display:none" src="%s">'\
+                img_code = '<img class="subject subject%s" id="image%s" '\
+                    'src="%s">'\
                     %(i+1, j+1, self.static_url(img))
                 html = html + img_code
 
