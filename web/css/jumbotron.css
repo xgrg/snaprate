@@ -5,6 +5,18 @@ body {
   background-color:black;
   color:white;
 }
+
+div.container{
+  margin-left:50px;
+  width:1700px;
+}
+
+img.subject{
+  height:1200px;
+  width:1800px;
+  display:none
+}
+
 .starter-template {
   padding: 40px 15px;
   text-align: justify;
