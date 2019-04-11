@@ -38,10 +38,11 @@
       }
     }
 
-    function hide_and_show(visible_class, visible_subject, visible_image){
+    function hide_and_show(){
       $("img."+visible_class).hide();
       visible_class = 'subject' + visible_subject;
       visible_image = 1;
+      visible_id = 'image' + visible_image;
       $("img."+visible_class+"#image1").show();
       $("span#subject_number").text(visible_subject);
       $("span#image_number").text(visible_image);
@@ -64,7 +65,7 @@
           visible_subject = visible_subject - 1;
         }
 
-        hide_and_show(visible_class, visible_subject, visible_image)
+        hide_and_show() //visible_class, visible_subject, visible_image)
       }
       else if (id == "nextsubj"){
         validate();
@@ -78,7 +79,7 @@
           visible_subject = visible_subject + 1;
         }
 
-        hide_and_show(visible_class, visible_subject, visible_image)
+        hide_and_show() ; //visible_class, visible_subject, visible_image)
       }
 
       else if (id == "prevsnap" || id == "nextsnap"){
