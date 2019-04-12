@@ -21,20 +21,80 @@
     <script src="{{static_url("vendor/bootstrap-3.3.6/dist/js/bootstrap.min.js")}}"></script>
     <script>
 
-    visible_subject = 1;
+    visible_subject = {{visible_subject}};
+
     visible_image = 1;
     n_subjects = {{n_subjects}};
-    n_snapshots = {{n_snapshots}};
 
-    $("img.subject1#image1").show();
+    $("img.subject" + visible_subject + "#image1").show();
+
 
     function validate(){
       ans = $('input').val();
-      i = ['', '123', '321', '312', '132', '213', '231'].indexOf(ans);
-      console.log(i);
-      if (i == -1){
-         alert('Value not allowed. Please correct.')
-         return ;
+      if (ans.indexOf('"') > -1){
+        alert('Please remove any " from your comments before validating.')
+        return false;
+      }
+      c = get_score();
+      console.log(c)
+      if (ans != '' && c === ''){
+         alert('Please also give a score or remove your comment otherwise.')
+         return false;
+      }
+      else{
+        return true;
+      }
+    }
+
+    function cycle_button(e){
+      if ($(this).hasClass("btn-light")) {
+          $(this).removeClass("btn-light");
+          $(this).addClass("btn-success");
+      }
+      else if ($(this).hasClass("btn-success")) {
+          $(this).removeClass("btn-success");
+          $(this).addClass("btn-danger");
+      }
+      else if ($(this).hasClass("btn-danger")) {
+          $(this).removeClass("btn-danger");
+          $(this).addClass("btn-warning");
+      }
+      else if ($(this).hasClass("btn-warning")) {
+          $(this).removeClass("btn-warning");
+          $(this).addClass("btn-light");
+      }
+    }
+
+    function color_button(value){
+      $("#score").removeClass("btn-success");
+      $("#score").removeClass("btn-danger");
+      $("#score").removeClass("btn-light");
+      $("#score").removeClass("btn-warning");
+      if (value == ""){
+        $("#score").addClass("btn-light");
+      }
+      else{
+        value = parseInt(value);
+        if (value == 1){
+          $("#score").addClass("btn-warning");
+        }
+        else if (value == 0){
+          $("#score").addClass("btn-success");
+        }
+        else if (value == -1){
+          $("#score").addClass("btn-danger");
+        }
+      }
+    }
+    function color_test(value){
+      $("#test").removeClass("btn-success");
+      $("#test").removeClass("btn-danger");
+      $("#test").removeClass("btn-light");
+      if (value == "True"){
+        $("#test").addClass("btn-success");
+      }
+      else if (value == "False"){
+        $("#test").addClass("btn-danger");
       }
     }
 
@@ -49,66 +109,60 @@
 
     }
 
+    function get_score(){
+      if ($("#score").hasClass('btn-light')) {
+          return '';
+      }
+      else if ($("#score").hasClass('btn-danger')) {
+          return -1;
+      }
+      else if ($("#score").hasClass('btn-warning')) {
+          return 1;
+      }
+      else if ($("#score").hasClass('btn-success')) {
+          return 0;
+      }
+
+    }
+
     $("a").click(function(e){
-      e.preventDefault();
       id = $(this).attr('id');
+      e.preventDefault();
 
       if (id == "prevsubj") {
-        validate();
-        save_subject("prev");
+        if (validate() == true){
+          save_subject("prev");
 
-        visible_class = 'subject' + visible_subject;
-        if (visible_subject == 1) {
-          visible_subject = n_subjects;
-        }
-        else {
-          visible_subject = visible_subject - 1;
-        }
+          visible_class = 'subject' + visible_subject;
+          if (visible_subject == 1) {
+            visible_subject = n_subjects;
+          }
+          else {
+            visible_subject = visible_subject - 1;
+          }
 
-        hide_and_show() //visible_class, visible_subject, visible_image)
+          hide_and_show() //visible_class, visible_subject, visible_image)
+        }
       }
       else if (id == "nextsubj"){
-        validate();
-        save_subject("next");
+        if (validate() == true){
+          save_subject("next");
 
-        visible_class = 'subject' + visible_subject;
-        if (visible_subject == n_subjects) {
-          visible_subject = 1;
-        }
-        else {
-          visible_subject = visible_subject + 1;
-        }
+          visible_class = 'subject' + visible_subject;
+          if (visible_subject == n_subjects) {
+            visible_subject = 1;
+          }
+          else {
+            visible_subject = visible_subject + 1;
+          }
 
-        hide_and_show() ; //visible_class, visible_subject, visible_image)
+          hide_and_show() ; //visible_class, visible_subject, visible_image)
+        }
       }
-
-      else if (id == "prevsnap" || id == "nextsnap"){
-        visible_class = 'subject' + visible_subject;
-        visible_id = 'image' + visible_image;
-
-        if ($("img." + visible_class + "#" + visible_id).is(":visible")) {
-          if (id == "prevsnap") {
-            if (visible_image == 1) {
-              visible_image = n_snapshots;
-            }
-            else {
-              visible_image = visible_image - 1;
-            }
-          }
-          else if (id == "nextsnap"){
-            if (visible_image == n_snapshots) {
-              visible_image = 1;
-            }
-            else {
-              visible_image = visible_image + 1;
-            }
-          }
-
-          $("img." + visible_class + "#" + visible_id).hide();
-          visible_id = 'image' + visible_image;
-          $("img." + visible_class + "#" + visible_id).show();
+      else if (id == 'nextbad'){
+        if (validate() == true){
+           save_subject("nextbad");
         }
-        $("span#image_number").text(visible_image);
       }
       return false;
     });
@@ -117,26 +171,39 @@
       $.ajax({
             type: "POST",
             url: "/post/",
-            data: {"rankings":$('input').val(),
+            data: {"score": get_score(),
+                   "comments": $('input').val(),
                    "subject":visible_subject,
                    "then":then},
             dataType:'json',
             success: function(data) {
-                if ($('input').val() == ''){
+                if ($('#score').hasClass('btn-light')){
                     $( "span.skipped" ).fadeIn( 150 ).delay( 100 ).fadeOut( 300 );
                 }
                 else {
                   $( "span.success" ).fadeIn( 150 ).delay( 100 ).fadeOut( 300 );
                 }
-                $('input').val(data[0]);
-                $('#username').text(data[1]);
+                color_button(data[0]);
+                $('input').val(data[1]);
+                $('#username').text(data[2]);
+                color_test(data[3]);
+                $('#grayvol').text('GM volume: ' + data[4])
+                $('#whitevol').text('WM volume: ' + data[5])
+                if (then == 'nextbad'){
+                  visible_class = 'subject' + visible_subject;
+                  visible_subject = parseInt(data[6]);
+                  hide_and_show()
+                }
                 return data;
 
             }
         });
     }
     $('a#logout').unbind('click')
-    $("span").click(save_subject);
+    $('a#download').unbind('click')
+    //$("span").click(save_subject);
+    $("#score").click(cycle_button);
+
 
     </script>
   </body>

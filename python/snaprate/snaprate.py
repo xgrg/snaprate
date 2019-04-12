@@ -23,24 +23,20 @@ def collect_snapshots(fp='/tmp/snapshots.json'):
     already, then load its content instead of recollecting new lists.
     '''
     snapshots = {}
-    subjects = [10019, 10065, 10070, 10200, 10235, 10245, 10515, 10724,
-        10779, 11042, 11114, 11127, 11248, 11257, 11262, 11387, 11478, 11593,
-        11656, 11711, 11829, 12279, 12304, 12308, 12778, 13035, 13059, 13105,
-        13244, 44660, 55630]
 
     if not op.isfile(fp):
         dd = op.join('/'.join(op.abspath(__file__).split('/')[:-3]), 'web')
 
-        ft = op.join(dd, 'images', 'snapshots', 'FS6%s', 'snapshot_%s.png')
+        ft = op.join(dd, 'images', 'snapshots', 'spm12', '*%s.jpg')
+        subjects = ['BBRC%s'%op.basename(e).split('BBRC')[1][:-4] for e in glob(ft%'*')]
+
+        json.dump(subjects, open('/tmp/subjects.json','w'))
 
         log.info('Collecting snapshots and shuffling. (%s)'%ft)
         for s in subjects:
             snapshots[s] = []
-            modes = ['', '-T1IR', '-T1T2']
-            random.shuffle(modes)
-            for mode in modes:
-                fn = ft%(mode, s)
-                snapshots[s].append(glob(fn)[0][len(dd):][1:])
+            fn = ft%(s)
+            snapshots[s].append(glob(fn)[0][len(dd):][1:])
         json.dump(snapshots, open(fp, 'w'), indent=4)
         log.info('Saving file %s...'%fp)
 
@@ -71,7 +67,8 @@ class AuthLoginHandler(BaseHandler):
         self.render("html/login.html", errormessage = errormessage)
 
     def check_permission(self, password, username):
-        users = ['greg', 'raffaele', 'oriol', 'gonzalo', 'juando', 'carles', 'jordi']
+        users = ['greg', 'gemma', 'raffaele', 'oriol', 'gonzalo', 'juando',
+            'carles', 'jordi', 'mahnaz', 'anna', 'eider', 'natalia']
         log.info('Default users: %s'%users)
         for each in users:
             if username == each and password == each:
@@ -95,60 +92,120 @@ class AuthLoginHandler(BaseHandler):
         else:
             self.clear_cookie("user")
 
+class DownloadHandler(BaseHandler):
+    def get(self):
+        username = str(self.current_user[1:-1], 'utf-8')
+
+        file_name = '/tmp/scores_%s.xls'%username
+        buf_size = 4096
+        self.set_header('Content-Type', 'application/octet-stream')
+        self.set_header('Content-Disposition', 'attachment; filename=' + op.basename(file_name))
+        with open(file_name, 'rb') as f:
+            while True:
+                data = f.read(buf_size)
+                if not data:
+                    break
+                self.write(data)
+        self.finish()
+
+
+def find_next_bad(subject, tests):
+    subjects = json.load(open('/tmp/subjects.json'))
+
+    failed = sorted([int(subjects.index(e))+1 for e in tests.query('not HasNormalSPM12Volumes').index])
+    if subject in failed:
+        failed.remove(subject)
+    failed.append(subject)
+    failed = sorted(failed)
+    i = failed.index(subject)
+    ns = failed[i + 1] if i + 1 < len(failed) else failed[0]
+    return ns
 
 class PostHandler(BaseHandler):
     def post(self):
+        subjects = json.load(open('/tmp/subjects.json'))
         username = str(self.current_user[1:-1], 'utf-8')
         n_subjects = len(self.snapshots.keys())
-        n_snapshots = 3
+
+        log.info(self.scores)
         log.info('User %s has given following scores: %s'
             %(username, self.scores[username]))
-        rankings = self.get_argument("rankings", None)
+        score = self.get_argument("score", None)
+        comments = self.get_argument("comments", None)
         subject = int(self.get_argument("subject", None))
         then = self.get_argument("then", None)
 
-        log.info('%s has given %s (out of %s)'%(subject, rankings, n_subjects))
-        self.scores[username][subject] = rankings
+        log.info('%s was given %s (out of %s) (comments: %s)'
+            %(subject, score, n_subjects, comments))
+        self.scores[username][subject] = [score, comments]
 
         fn = '/tmp/scores_%s.xls'%username
         log.info('Writing %s...'%fn)
-        pd.DataFrame.from_dict(self.scores[username], orient='index').to_excel(fn)
+        data = []
+        for s, v in self.scores[username].items():
+            row = [s]
+            row.extend(v)
+            data.append(row)
+        columns = ['ID', 'score', 'comments']
+        pd.DataFrame(data, columns=columns).set_index('ID').sort_index().to_excel(fn)
 
         if then == 'next':
             subject = subject + 1 if subject < n_subjects else 1
         elif then == 'prev':
             subject = subject - 1 if subject > 1 else n_subjects
+        elif then == 'nextbad':
+            subject = find_next_bad(subject, self.tests)
 
         log.info('User %s has given following scores: %s'
             %(username, self.scores[username]))
 
-        ns = self.scores[username].get(subject, '')
-        log.info('Next subject: %s (%s)'
-            %(subject, ns))
-        self.write('["%s","%s"]'%(ns, username))
+        score, comments = self.scores[username].get(subject, ['', ''])
+        test = self.tests.loc[subjects[subject-1]]['HasNormalSPM12Volumes']
+        c1 = self.tests.loc[subjects[subject-1]]['c1']
+        c2 = self.tests.loc[subjects[subject-1]]['c2']
+        log.info('Next subject: %s (%s) (%s)'
+            %(subject, score, comments))
+        self.write('["%s", "%s", "%s", "%s", "%s", "%s", "%s"]'
+            %(score, comments, username, test, c1, c2, subject))
 
-    def initialize(self, scores, snapshots):
+    def initialize(self, scores, snapshots, tests):
         self.scores = scores
         self.snapshots = snapshots
-
+        self.tests = tests
 
 class MainHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         username = str(self.current_user[1:-1], 'utf-8')
-        print(username)
         n_subjects = len(self.snapshots.keys())
-        n_snapshots = 3
+        id = int(self.get_argument('id', 1))
+
 
         fn = '/tmp/scores_%s.xls'%username
         log.info('Reading %s...'%fn)
         if op.isfile(fn):
-            x = pd.read_excel(fn, converters={0:int}).dropna().to_dict()[0]
-            self.scores[username] = x
+            x = pd.read_excel(fn).set_index('ID')
+            data = {}
+            for i, row in x.iterrows():
+                r = []
+                for e in row.to_list():
+                    if pd.isna(e):
+                        r.append('')
+                    else:
+                        r.append(e)
+                data[i] = r
+            self.scores[username] = data
+            value, comment = self.scores[username].get(id, ['',''])
+
         else:
             self.scores[username] = {}
+            value, comment = ('', '')
 
-        value = self.scores[username].get(1, '')
+
+        subjects = json.load(open('/tmp/subjects.json'))
+        test = self.tests.loc[subjects[id-1]]['HasNormalSPM12Volumes']
+        c1 = self.tests.loc[subjects[id-1]]['c1']
+        c2 = self.tests.loc[subjects[id-1]]['c2']
 
         html = ''
         for i, (s, imgs) in enumerate(self.snapshots.items()):
@@ -160,23 +217,22 @@ class MainHandler(BaseHandler):
 
         code = '''<div class="container">%s</div>
                 <div class="container">
-                    <a class="btn btn-primary" id="prevsnap" href="">
-                        previous snapshot</a>
-                    <a class="btn btn-primary" id="nextsnap" href="">
-                        next snapshot</a>
                     <button class="btn btn-info">
                         subject #
-                        <span class="badge badge-light" id="subject_number">1</span>
+                        <span class="badge badge-light" id="subject_number">%s</span>
                         /<span class="badge badge-light">%s</span>
                     </button>
-                    <button class="btn btn-info">snapshot #
-                        <span class="badge badge-light" id="image_number">1</span>
-                    </button>
+                    <a class="btn btn-secondary" id="nextbad" href="nextbad/">
+                        Go to next predicted failed case</a>
+                    <span class="btn btn-%s" id="test">Automatic prediction</span>
+                    <span class="btn btn-light" id="grayvol">GM volume: %s</span>
+                    <span class="btn btn-light" id="whitevol">WM volume: %s</span>
                     <span class="badge badge-light" id="username">%s</span>
                     <span class="success" style="display:none">SAVED</span>
                     <span class="skipped" style="display:none">SKIPPED</span>
                 </div>
                 <div class="container">
+                    <a class="btn btn-%s" id="score">Your score</a>
                     <input class="form-control" type="text" name="lname" value="%s">
                 </div>
                 <div class="container">
@@ -184,37 +240,44 @@ class MainHandler(BaseHandler):
                         previous subject</a>
                     <a class="btn btn-primary" id="nextsubj" href="">
                         next subject</a>
+                    <a class="btn btn-info" id="download" href="download/">
+                        download</a>
                     <a class="btn btn-danger" id="logout" href="/auth/logout/">
                         logout</a>
                 </div>
         '''
-
-        code = code%(html, n_subjects, username, value)
+        color_btn = {-1: 'danger', '' : 'light', 1: 'warning', 0:'success'}[value]
+        color_test = {True:'success', False:'danger'}[test]
+        code = code%(html, id, n_subjects, color_test, c1, c2, username, color_btn, comment)
         args = {'danger':'', 'datasource':'', 'database':'/tmp',
             'rate_subjects': code,
             'n_subjects': n_subjects,
-            'n_snapshots': n_snapshots}
+            'visible_subject': id}
 
         log.info('User %s has given following scores: %s'
             %(username, self.scores[username]))
         self.render("html/index.html", username = username, **args)
 
-    def initialize(self, scores, snapshots):
+    def initialize(self, scores, snapshots, tests):
         self.scores = scores
         self.snapshots = snapshots
+        self.tests = tests
 
 
 class Application(tornado.web.Application):
-    def __init__(self):
+    def __init__(self, args):
         self.scores = {}
+        self.tests = pd.read_excel(args.data).set_index('experiment_id')
         self.snapshots = collect_snapshots()
         log.info('Images: %s'%self.snapshots)
 
         handlers = [
-            (r"/", MainHandler, dict(snapshots=self.snapshots, scores=self.scores)),
+            (r"/", MainHandler, dict(snapshots=self.snapshots, scores=self.scores, tests=self.tests)),
             (r"/auth/login/", AuthLoginHandler),
             (r"/auth/logout/", AuthLogoutHandler),
-            (r"/post/", PostHandler,  dict(snapshots=self.snapshots, scores=self.scores))
+            (r"/post/", PostHandler, dict(snapshots=self.snapshots, scores=self.scores, tests=self.tests)),
+            (r"/download/", DownloadHandler)
+
         ]
         s = {
             "autoreload":False,
@@ -227,11 +290,21 @@ class Application(tornado.web.Application):
         tornado.web.Application.__init__(self, handlers, autoescape=None, **s)
 
 
-def main():
-    tornado.options.parse_command_line()
-    http_server = tornado.httpserver.HTTPServer(Application())
-    http_server.listen(options.port)
-    tornado.ioloop.IOLoop.instance().start()
+def main(args):
+    http_server = tornado.httpserver.HTTPServer(Application(args))
+    http_server.listen(args.port)
+
+    t = tornado.ioloop.IOLoop.instance()
+    t.start()
+
+
+import argparse
+import pandas as pd
+
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='sample argument')
+    parser.add_argument('--data', required=True)
+    parser.add_argument('--port', required=False, default=8890)
+    args = parser.parse_args()
+    main(args)
