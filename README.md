@@ -21,7 +21,7 @@ Every ranking is stored server-side in an individual file per rater. It is saved
 Users should login on the system using individual login/password opening a
 browser to the local network address where the server is running.
 
-![screenshot.png](screenshot.png)
+![screenshot1.png](screenshot1.png)
 
 ## Usage:
 
@@ -45,3 +45,32 @@ Hence it may be adapted to various applications (even when snapshots come from
 
 - tornado
 - pandas
+
+
+## Instructions for SPM12
+
+The `spm12` branch contains a version of **`snaprate`** adapted for the review
+of SPM12 segmentations. Once the server is running, users may log in using their
+attributed credentials to start their review from the main screen:
+
+![screenshot2.png](screenshot2.png)
+
+- Buttons `previous subject`/`next subject` are used to navigate through the
+different snapshots. As a result, the subject's identifier gets
+ incremented/decremented. Any given ID may be accessed through direct URL:
+ `<host>:<port>?id=<ID>` (ex: *localhost:8888?id=42*).
+
+- Button `Your score` is for the user to assign a score to the current snapshot. Clicking multiple times would turn it from not rated to green, then red, then orange,
+then back to not rated. Text box located just under this button is for
+potential comments. To save your review, just move on to the following/previous
+subject.
+
+- Each snapshot comes with an automatic prediction for quality, reflected by the
+color (green or red) of the `Automatic prediction` button. The link located to
+the left next to this button allows to skip directly to the next predicted
+failed case.
+On the right is displayed information regarding volumes of gray and white
+matter.
+
+- User reviews are systematically and automatically stored server-side.
+Nevertheless, the `download` button would ave them locally in an Excel table.
