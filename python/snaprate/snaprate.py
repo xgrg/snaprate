@@ -31,6 +31,7 @@ def collect_snapshots(fp='/tmp/snapshots.json'):
         subjects = ['BBRC%s'%op.basename(e).split('BBRC')[1][:-4] for e in glob(ft%'*')]
 
         json.dump(subjects, open('/tmp/subjects.json','w'))
+        #subjects = json.load(open('/tmp/subjects.json'))
 
         log.info('Collecting snapshots and shuffling. (%s)'%ft)
         for s in subjects:
@@ -68,7 +69,8 @@ class AuthLoginHandler(BaseHandler):
 
     def check_permission(self, password, username):
         users = ['greg', 'gemma', 'raffaele', 'oriol', 'gonzalo', 'juando',
-            'carles', 'jordi', 'mahnaz', 'anna', 'eider', 'natalia']
+            'carles', 'jordi', 'mahnaz', 'anna', 'eider', 'natalia', 'joseluis',
+             'karine', 'marc', 'mmila', 'mcrous', 'aleix']
         log.info('Default users: %s'%users)
         for each in users:
             if username == each and password == each:
@@ -208,7 +210,9 @@ class MainHandler(BaseHandler):
         c2 = self.tests.loc[subjects[id-1]]['c2']
 
         html = ''
-        for i, (s, imgs) in enumerate(self.snapshots.items()):
+        #for i, (s, imgs) in enumerate(self.snapshots.items()):
+        for i, s in enumerate(subjects):
+            imgs = self.snapshots[s]
             for j, img in enumerate(imgs):
                 img_code = '<img class="subject subject%s" id="image%s" '\
                     'src="%s">'\
