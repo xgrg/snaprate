@@ -128,8 +128,33 @@
     $("a").click(function(e){
       id = $(this).attr('id');
       e.preventDefault();
+      if (id == 'xnat'){
+         src = $("img.subject"+visible_subject).attr('src')
+         $.ajax({
+               type: "POST",
+               url: "/xnat/",
+               data: {"src": src},
+               dataType:'json',
+               success: function(data) {
+                 url = 'https://barcelonabrainimaging.org/data/'
+                    + 'experiments/' + data + '?format=html'
+                 var win = window.open(url, '_blank');
+                 if (win) {
+                     win.focus();
+                 } else {
+                     alert('Please allow popups for this website');
+                 }
+                 return true;
+               },
+               error: function(xhr, status, error){
+                 console.log(error)
+                 console.log(xhr)
+                 console.log(status)
+               }
+             });
 
-      if (id == "prevsubj") {
+      }
+      else if (id == "prevsubj") {
         if (validate() == true){
           save_subject("prev");
 
@@ -187,8 +212,8 @@
                 $('input').val(data[1]);
                 $('#username').text(data[2]);
                 color_test(data[3]);
-                $('#grayvol').text('GM volume: ' + data[4])
-                $('#whitevol').text('WM volume: ' + data[5])
+                $('#grayvol').text('HasNormalSubfieldVolumes: ' + data[4])
+                $('#whitevol').text('HasAllSubfields: ' + data[5])
                 if (then == 'nextbad'){
                   visible_class = 'subject' + visible_subject;
                   visible_subject = parseInt(data[6]);
