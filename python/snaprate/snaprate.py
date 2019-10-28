@@ -27,8 +27,9 @@ def collect_snapshots(fp='/tmp/snapshots.json'):
     if not op.isfile(fp):
         dd = op.join('/'.join(op.abspath(__file__).split('/')[:-3]), 'web')
 
-        ft = op.join(dd, 'images', 'snapshots', 'spm12', '*%s.jpg')
-        subjects = ['BBRC%s'%op.basename(e).split('BBRC')[1][:-4] for e in glob(ft%'*')]
+        ft = op.join(dd, 'images', 'snapshots', 'ashs', '*%s*.jpg')
+        subjects = ['_'.join(op.basename(e)[6:].split('_')[:2]) for e in glob(ft%'*')]
+        print(subjects)
 
         json.dump(subjects, open('/tmp/subjects.json','w'))
         #subjects = json.load(open('/tmp/subjects.json'))
@@ -114,7 +115,7 @@ class DownloadHandler(BaseHandler):
 def find_next_bad(subject, tests):
     subjects = json.load(open('/tmp/subjects.json'))
 
-    failed = sorted([int(subjects.index(e))+1 for e in tests.query('not HasNormalSPM12Volumes').index])
+    failed = sorted([int(subjects.index(e))+1 for e in tests.query('not HasNormalSubfieldVolumes').index])
     if subject in failed:
         failed.remove(subject)
     failed.append(subject)
@@ -162,9 +163,9 @@ class PostHandler(BaseHandler):
             %(username, self.scores[username]))
 
         score, comments = self.scores[username].get(subject, ['', ''])
-        test = self.tests.loc[subjects[subject-1]]['HasNormalSPM12Volumes']
-        c1 = self.tests.loc[subjects[subject-1]]['c1']
-        c2 = self.tests.loc[subjects[subject-1]]['c2']
+        test = self.tests.loc[subjects[subject-1]]['HasNormalSubfieldVolumes']
+        c1 = self.tests.loc[subjects[subject-1]]['HasNormalSubfieldVolumes']
+        c2 = self.tests.loc[subjects[subject-1]]['HasAllSubfields']
         log.info('Next subject: %s (%s) (%s)'
             %(subject, score, comments))
         self.write('["%s", "%s", "%s", "%s", "%s", "%s", "%s"]'
@@ -205,9 +206,9 @@ class MainHandler(BaseHandler):
 
 
         subjects = json.load(open('/tmp/subjects.json'))
-        test = self.tests.loc[subjects[id-1]]['HasNormalSPM12Volumes']
-        c1 = self.tests.loc[subjects[id-1]]['c1']
-        c2 = self.tests.loc[subjects[id-1]]['c2']
+        test = self.tests.loc[subjects[id-1]]['HasNormalSubfieldVolumes']
+        c1 = self.tests.loc[subjects[id-1]]['HasNormalSubfieldVolumes']
+        c2 = self.tests.loc[subjects[id-1]]['HasAllSubfields']
 
         html = ''
         #for i, (s, imgs) in enumerate(self.snapshots.items()):
@@ -226,11 +227,13 @@ class MainHandler(BaseHandler):
                         <span class="badge badge-light" id="subject_number">%s</span>
                         /<span class="badge badge-light">%s</span>
                     </button>
+                    <a class="btn btn-info" id="xnat">Go to XNAT</a>
                     <a class="btn btn-secondary" id="nextbad" href="nextbad/">
                         Go to next predicted failed case</a>
                     <span class="btn btn-%s" id="test">Automatic prediction</span>
-                    <span class="btn btn-light" id="grayvol">GM volume: %s</span>
-                    <span class="btn btn-light" id="whitevol">WM volume: %s</span>
+
+                    <span class="btn btn-light" id="grayvol">HasNormalSubfieldVolumes: %s</span>
+                    <span class="btn btn-light" id="whitevol">HasAllSubfields: %s</span>
                     <span class="badge badge-light" id="username">%s</span>
                     <span class="success" style="display:none">SAVED</span>
                     <span class="skipped" style="display:none">SKIPPED</span>
@@ -267,11 +270,26 @@ class MainHandler(BaseHandler):
         self.snapshots = snapshots
         self.tests = tests
 
+class XNATHandler(BaseHandler):
+    def post(self):
+        src = self.get_argument('src')
+        import os.path as op
+        eid = '_'.join(op.basename(src).split('?')[0][6:].split('_')[:2])
+        print(eid)
+        url = 'https://barcelonabrainimaging.org/data/'\
+            'experiments/%s?format=html' % eid
+        print(url)
+        self.write('"%s"'%eid)
+
+    def initialize(self, scores, snapshots, tests):
+        self.scores = scores
+        self.snapshots = snapshots
+        self.tests = tests
 
 class Application(tornado.web.Application):
     def __init__(self, args):
         self.scores = {}
-        self.tests = pd.read_excel(args.data).set_index('experiment_id')
+        self.tests = pd.read_excel(args.data).set_index('ID')
         self.snapshots = collect_snapshots()
         log.info('Images: %s'%self.snapshots)
 
@@ -280,6 +298,7 @@ class Application(tornado.web.Application):
             (r"/auth/login/", AuthLoginHandler),
             (r"/auth/logout/", AuthLogoutHandler),
             (r"/post/", PostHandler, dict(snapshots=self.snapshots, scores=self.scores, tests=self.tests)),
+            (r"/xnat/", XNATHandler, dict(snapshots=self.snapshots, scores=self.scores, tests=self.tests)),
             (r"/download/", DownloadHandler)
 
         ]
