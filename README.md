@@ -10,6 +10,7 @@ Once the server is running, users may log in using their
 attributed credentials to start their review from the main screen:
 
 ![screenshot2.png](screenshot2.png)
+![screenshot3.png](screenshot3.png)
 
 - Buttons `previous subject`/`next subject` are used to navigate through the
 different snapshots. As a result, the subject's identifier gets
