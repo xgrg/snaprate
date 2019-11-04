@@ -211,13 +211,16 @@
                 color_button(data[0]);
                 $('input').val(data[1]);
                 $('#username').text(data[2]);
-                color_test(data[3]);
-                $('#grayvol').text('HasNormalSubfieldVolumes: ' + data[4])
-                $('#whitevol').text('HasAllSubfields: ' + data[5])
                 if (then == 'nextbad'){
                   visible_class = 'subject' + visible_subject;
-                  visible_subject = parseInt(data[6]);
+                  visible_subject = parseInt(data[3]);
                   hide_and_show()
+                }
+                if (data.length>4){
+                  color_test(data[4]);
+                  for (i = 0 ; i < data[5].length ; i++){
+                    $('#test'+i).text(data[5][i][0]+': ' + data[5][i][1])
+                  }
                 }
                 return data;
 
