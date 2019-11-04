@@ -15,6 +15,8 @@ import logging as log
 
 define("port", default=8890, help="run on the given port", type=int)
 
+tn = 'HasNormalSubfieldVolumes'
+test_names = ['HasNormalSubfieldVolumes', 'HasAllSubfields']
 
 def collect_snapshots(fp='/tmp/snapshots.json'):
     '''Build a dict made of lists of snapshots per each subject.
@@ -71,7 +73,7 @@ class AuthLoginHandler(BaseHandler):
     def check_permission(self, password, username):
         users = ['greg', 'gemma', 'raffaele', 'oriol', 'gonzalo', 'juando',
             'carles', 'jordi', 'mahnaz', 'anna', 'eider', 'natalia', 'joseluis',
-             'karine', 'marc', 'mmila', 'mcrous', 'aleix']
+             'karine', 'marc', 'mmila', 'mcrous', 'aleix', 'chema']
         log.info('Default users: %s'%users)
         for each in users:
             if username == each and password == each:
@@ -115,7 +117,7 @@ class DownloadHandler(BaseHandler):
 def find_next_bad(subject, tests):
     subjects = json.load(open('/tmp/subjects.json'))
 
-    failed = sorted([int(subjects.index(e))+1 for e in tests.query('not HasNormalSubfieldVolumes').index])
+    failed = sorted([int(subjects.index(e))+1 for e in tests.query('not %s'%tn).index])
     if subject in failed:
         failed.remove(subject)
     failed.append(subject)
@@ -163,13 +165,20 @@ class PostHandler(BaseHandler):
             %(username, self.scores[username]))
 
         score, comments = self.scores[username].get(subject, ['', ''])
-        test = self.tests.loc[subjects[subject-1]]['HasNormalSubfieldVolumes']
-        c1 = self.tests.loc[subjects[subject-1]]['HasNormalSubfieldVolumes']
-        c2 = self.tests.loc[subjects[subject-1]]['HasAllSubfields']
+        res = [score, comments, username, subject]
+
+        if not self.tests is None:
+
+
+            test = str(self.tests.loc[subjects[subject-1]][tn])
+            c = [str(self.tests.loc[subjects[subject-1]][each]) for each in test_names]
+
+            res.append(test)
+            res.append([(i,j) for i,j in zip(test_names, c)])
+
         log.info('Next subject: %s (%s) (%s)'
             %(subject, score, comments))
-        self.write('["%s", "%s", "%s", "%s", "%s", "%s", "%s"]'
-            %(score, comments, username, test, c1, c2, subject))
+        self.write(json.dumps(res))
 
     def initialize(self, scores, snapshots, tests):
         self.scores = scores
@@ -179,10 +188,11 @@ class PostHandler(BaseHandler):
 class MainHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
+
         username = str(self.current_user[1:-1], 'utf-8')
         n_subjects = len(self.snapshots.keys())
         id = int(self.get_argument('id', 1))
-
+        #wd = int(self.get_argument('wd', 'snapshots'))
 
         fn = '/tmp/scores_%s.xls'%username
         log.info('Reading %s...'%fn)
@@ -192,10 +202,8 @@ class MainHandler(BaseHandler):
             for i, row in x.iterrows():
                 r = []
                 for e in row.to_list():
-                    if pd.isna(e):
-                        r.append('')
-                    else:
-                        r.append(e)
+                    aux = '' if pd.isna(e) else e
+                    r.append(aux)
                 data[i] = r
             self.scores[username] = data
             value, comment = self.scores[username].get(id, ['',''])
@@ -206,12 +214,25 @@ class MainHandler(BaseHandler):
 
 
         subjects = json.load(open('/tmp/subjects.json'))
-        test = self.tests.loc[subjects[id-1]]['HasNormalSubfieldVolumes']
-        c1 = self.tests.loc[subjects[id-1]]['HasNormalSubfieldVolumes']
-        c2 = self.tests.loc[subjects[id-1]]['HasAllSubfields']
+
+        if not self.tests is None:
+            test = self.tests.loc[subjects[id-1]][tn]
+            c = [self.tests.loc[subjects[id-1]][each] for each in test_names]
+            test_unit = '<span class="btn btn-light" id="test%s">%s: %s</span>'
+            test_section = ''.join([test_unit%(i, test_key, test_value) \
+                for i, (test_key, test_value) in enumerate(zip(test_names, c))])
+
+            color_test = {True:'success', False:'danger'}[test]
+
+            test_section = '''<a class="btn btn-secondary" id="nextbad" href="nextbad/">
+                Go to next predicted failed case</a>
+                <span class="btn btn-{color_test}" id="test">Automatic prediction</span>'''.format(color_test=color_test)\
+                + test_section
+        else:
+            test_section = ''
 
         html = ''
-        #for i, (s, imgs) in enumerate(self.snapshots.items()):
+
         for i, s in enumerate(subjects):
             imgs = self.snapshots[s]
             for j, img in enumerate(imgs):
@@ -220,27 +241,26 @@ class MainHandler(BaseHandler):
                     %(i+1, j+1, self.static_url(img))
                 html = html + img_code
 
-        code = '''<div class="container">%s</div>
+
+
+        code = '''<div class="container">{html}</div>
                 <div class="container">
                     <button class="btn btn-info">
                         subject #
-                        <span class="badge badge-light" id="subject_number">%s</span>
-                        /<span class="badge badge-light">%s</span>
+                        <span class="badge badge-light" id="subject_number">{id}</span>
+                        /<span class="badge badge-light">{n_subjects}</span>
                     </button>
                     <a class="btn btn-info" id="xnat">Go to XNAT</a>
-                    <a class="btn btn-secondary" id="nextbad" href="nextbad/">
-                        Go to next predicted failed case</a>
-                    <span class="btn btn-%s" id="test">Automatic prediction</span>
 
-                    <span class="btn btn-light" id="grayvol">HasNormalSubfieldVolumes: %s</span>
-                    <span class="btn btn-light" id="whitevol">HasAllSubfields: %s</span>
-                    <span class="badge badge-light" id="username">%s</span>
+                    {test_section}
+
+                    <span class="badge badge-light" id="username">{username}</span>
                     <span class="success" style="display:none">SAVED</span>
                     <span class="skipped" style="display:none">SKIPPED</span>
                 </div>
                 <div class="container">
-                    <a class="btn btn-%s" id="score">Your score</a>
-                    <input class="form-control" type="text" name="lname" value="%s">
+                    <a class="btn btn-{color_btn}" id="score">Your score</a>
+                    <input class="form-control" type="text" name="lname" value="{comment}">
                 </div>
                 <div class="container">
                     <a class="btn btn-primary" id="prevsubj" href="">
@@ -254,8 +274,9 @@ class MainHandler(BaseHandler):
                 </div>
         '''
         color_btn = {-1: 'danger', '' : 'light', 1: 'warning', 0:'success'}[value]
-        color_test = {True:'success', False:'danger'}[test]
-        code = code%(html, id, n_subjects, color_test, c1, c2, username, color_btn, comment)
+        code = code.format(html=html, id=id, n_subjects=n_subjects,
+            test_section=test_section,
+            username=username, color_btn=color_btn, comment=comment)
         args = {'danger':'', 'datasource':'', 'database':'/tmp',
             'rate_subjects': code,
             'n_subjects': n_subjects,
@@ -289,7 +310,9 @@ class XNATHandler(BaseHandler):
 class Application(tornado.web.Application):
     def __init__(self, args):
         self.scores = {}
-        self.tests = pd.read_excel(args.data).set_index('ID')
+        self.tests = None if args.data is None else\
+            pd.read_excel(args.data).set_index('ID')
+
         self.snapshots = collect_snapshots()
         log.info('Images: %s'%self.snapshots)
 
@@ -327,7 +350,7 @@ import pandas as pd
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='sample argument')
-    parser.add_argument('--data', required=True)
+    parser.add_argument('--data', required=False, default=None)
     parser.add_argument('--port', required=False, default=8890)
     args = parser.parse_args()
     main(args)
