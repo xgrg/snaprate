@@ -2,7 +2,7 @@ from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
 import argparse
 from snaprate.server import main, create_parser, MainHandler
 import mock
-
+from urllib.parse import urlencode
 
 
 class UserAPITest(AsyncHTTPTestCase):
@@ -23,6 +23,10 @@ class TestSnaprateApp(AsyncHTTPTestCase):
         with mock.patch.object(MainHandler, 'get_secure_cookie') as m:
             m.return_value = bytes('"tornado"', 'utf-8')
             response = self.fetch('/', method='GET')
-            response = self.fetch('post', method='POST')
+            data = {"score": 0,
+               "comments": 'hey',
+               "subject":1,
+               "pipeline":'toto',
+               "then":2}
+            response = self.fetch('/post', method='POST', body=urlencode(data))
             print(response.body)
-            print('YAH')
