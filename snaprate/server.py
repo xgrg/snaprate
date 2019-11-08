@@ -198,7 +198,7 @@ class MainHandler(BaseHandler):
         log.info('Reading %s...'%fn)
 
         if op.isfile(fn):
-            x = pd.read_excel(fn).set_index('ID')
+            x = pd.read_excel(fn, converters={'ID':str}).set_index('ID')
             data = {}
             for i, row in x.iterrows():
                 r = []
@@ -318,7 +318,7 @@ def collect_tests(wd):
             log.warning(msg)
             tests[f] = None
         else:
-            tests[f] = pd.read_excel(fp).set_index('ID')
+            tests[f] = pd.read_excel(fp, converters={'ID':str}).set_index('ID')
 
             log.info('[%s] %s subjects found - %s tests'\
                 %(f, len(tests[f]), len(tests[f].columns)))

@@ -19,14 +19,17 @@ class TestSnaprateApp(AsyncHTTPTestCase):
         return server
 
     def test_homepage(self):
+        response = self.fetch('/logout')
         response = self.fetch('/')
         with mock.patch.object(MainHandler, 'get_secure_cookie') as m:
             m.return_value = bytes('"tornado"', 'utf-8')
             response = self.fetch('/', method='GET')
             data = {"score": 0,
-               "comments": 'hey',
+               "comments": 'comment',
                "subject":1,
-               "pipeline":'toto',
+               "pipeline":'PIPELINE1',
                "then":2}
+
             response = self.fetch('/post', method='POST', body=urlencode(data))
-            print(response.body)
+            data = {"s": 'PIPELINE1'}
+            response = self.fetch('/download', method='GET')
