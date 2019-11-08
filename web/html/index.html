@@ -192,13 +192,29 @@
       return false;
     });
 
+    $.urlParam = function(name){
+        var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+        if (results==null){
+           return null;
+        }
+        else{
+           return results[1] || 0;
+        }
+    }
+
     function save_subject(then){
+      s = $.urlParam('s')
+      if (s==null){
+        s = 'ASHS'
+      }
+
       $.ajax({
             type: "POST",
             url: "/post/",
             data: {"score": get_score(),
                    "comments": $('input').val(),
                    "subject":visible_subject,
+                   "pipeline":s,
                    "then":then},
             dataType:'json',
             success: function(data) {

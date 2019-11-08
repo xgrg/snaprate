@@ -1,6 +1,6 @@
 import os.path as op
 DEBUG = True
-DIRNAME = '/'.join(op.dirname(__file__).split('/')[:-2])
+DIRNAME = '/'.join(op.dirname(__file__).split('/')[:-1])
 STATIC_PATH = op.join(DIRNAME, 'web')
 TEMPLATE_PATH = op.join(DIRNAME, 'web')
 

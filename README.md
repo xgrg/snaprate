@@ -1,5 +1,8 @@
 # snaprate
 
+[![pipeline status](https://img.shields.io/travis/xgrg/snaprate.svg)](https://travis-ci.org/xgrg/snaprate)
+[![pipeline status](https://coveralls.io/repos/github/xgrg/snaprate/badge.svg?branch=master)](https://coveralls.io/github/xgrg/snaprate?branch=master)
+
 Make it easier to collect quality control scores from a panel of experts.
 
 The tool works as a web application where experts can review snapshots across subjects.
