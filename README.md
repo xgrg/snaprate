@@ -61,4 +61,4 @@ Hence it may be adapted to various applications (even when snapshots come from
 
 ## Live action
 
-![liveaction](liveaction.jpg)
+![liveaction](demo.gif)
