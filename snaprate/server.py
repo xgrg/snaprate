@@ -14,6 +14,12 @@ from tornado.options import define, options
 import logging as log
 import argparse
 
+def _initialize(self, wd, subjects, scores, snapshots, tests):
+    self.wd = wd
+    self.subjects = subjects
+    self.scores = scores
+    self.snapshots = snapshots
+    self.tests = tests
 
 define("port", default=8890, help="run on the given port", type=int)
 
@@ -66,6 +72,9 @@ class AuthLoginHandler(BaseHandler):
             self.set_secure_cookie("user", tornado.escape.json_encode(user))
         else:
             self.clear_cookie("user")
+
+    def initialize(self, wd):
+        self.wd = wd
 
 class DownloadHandler(BaseHandler):
     def get(self):
@@ -164,12 +173,8 @@ class PostHandler(BaseHandler):
             %(subject, score, comments))
         self.write(json.dumps(res))
 
-    def initialize(self, wd, subjects, scores, snapshots, tests):
-        self.wd = wd
-        self.subjects = subjects
-        self.scores = scores
-        self.snapshots = snapshots
-        self.tests = tests
+    def initialize(self, **kwargs):
+        _initialize(self, **kwargs)
 
 
 class MainHandler(BaseHandler):
@@ -281,12 +286,8 @@ class MainHandler(BaseHandler):
             %(username, self.scores[wd][username]))
         self.render("html/index.html", username = username, **args)
 
-    def initialize(self, wd, subjects, scores, snapshots, tests):
-        self.wd = wd
-        self.subjects = subjects
-        self.scores = scores
-        self.snapshots = snapshots
-        self.tests = tests
+    def initialize(self, **kwargs):
+        _initialize(self, **kwargs)
 
 class XNATHandler(BaseHandler):
     def post(self):
@@ -300,12 +301,8 @@ class XNATHandler(BaseHandler):
         print(url)
         self.write('"%s"'%eid)
 
-    def initialize(self, wd, subjects, scores, snapshots, tests):
-        self.wd = wd
-        self.subjects = subjects
-        self.scores = scores
-        self.snapshots = snapshots
-        self.tests = tests
+    def initialize(self, **kwargs):
+        _initialize(self, **kwargs)
 
 def collect_tests(wd):
     folders = [op.basename(e) for e in glob(op.join(wd, '*')) if op.isdir(e)]
@@ -381,7 +378,7 @@ class Application(tornado.web.Application):
 
         handlers = [
             (r"/", MainHandler, params),
-            (r"/auth/login/", AuthLoginHandler),
+            (r"/auth/login/", AuthLoginHandler, dict(wd=wd)),
             (r"/auth/logout/", AuthLogoutHandler),
             (r"/post/", PostHandler, params),
             (r"/xnat/", XNATHandler, params),
