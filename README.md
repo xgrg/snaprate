@@ -59,4 +59,6 @@ Hence it may be adapted to various applications (even when snapshots come from
 - tornado
 - pandas
 
-![screenshot1.png](screenshot1.png)
+## Live action
+
+![liveaction](liveaction.jpg)
