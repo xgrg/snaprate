@@ -59,10 +59,13 @@ class AuthLoginHandler(BaseHandler):
     def post(self):
         username = str(self.get_argument("username", ""))
         password = str(self.get_argument("password", ""))
+        resource = str(self.get_argument("resource", ""))
+
         auth = self.check_permission(password, username)
         if auth:
             self.set_current_user(username)
-            self.redirect(self.get_argument("next", u"/"))
+            #self.redirect(self.get_argument("next", u"/?s='FREESURFER6_HIRES'")) #"?s=%s"%resource))
+            self.redirect(u"/?s=%s"%resource)
         else:
             error_msg = u"?error=" + tornado.escape.url_escape("Login incorrect")
             self.redirect(u"/auth/login/" + error_msg)

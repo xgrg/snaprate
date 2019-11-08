@@ -11,7 +11,7 @@ class UserAPITest(AsyncHTTPTestCase):
         return self.app
 
 
-class TestHelloApp(AsyncHTTPTestCase):
+class TestSnaprateApp(AsyncHTTPTestCase):
     def get_app(self):
         parser = create_parser()
         args = parser.parse_args(['-d', 'tests/data', '--port', '8899'])
@@ -20,8 +20,9 @@ class TestHelloApp(AsyncHTTPTestCase):
 
     def test_homepage(self):
         response = self.fetch('/')
-        print(response.body)
         with mock.patch.object(MainHandler, 'get_secure_cookie') as m:
             m.return_value = bytes('"tornado"', 'utf-8')
             response = self.fetch('/', method='GET')
-        
+            response = self.fetch('post', method='POST')
+            print(response.body)
+            print('YAH')
