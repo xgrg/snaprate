@@ -5,51 +5,17 @@ import tornado.ioloop
 import tornado.options
 import tornado.web
 import pandas as pd
-import settings
+from snaprate import settings
 from glob import glob
 import random
 import os.path as op
 import json
 from tornado.options import define, options
 import logging as log
+import argparse
+
 
 define("port", default=8890, help="run on the given port", type=int)
-
-tn = 'HasNormalSubfieldVolumes'
-test_names = ['HasNormalSubfieldVolumes', 'HasAllSubfields']
-
-def collect_snapshots(fp='/tmp/snapshots.json'):
-    '''Build a dict made of lists of snapshots per each subject.
-    Every subject should have a list of same size and every list is shuffled.
-    The resulting dictionary is stored in `fp`. If this file `fp` exists
-    already, then load its content instead of recollecting new lists.
-    '''
-    snapshots = {}
-
-    if not op.isfile(fp):
-        dd = op.join('/'.join(op.abspath(__file__).split('/')[:-3]), 'web')
-
-        ft = op.join(dd, 'images', 'snapshots', 'ashs', '*%s*.jpg')
-        subjects = ['_'.join(op.basename(e)[6:].split('_')[:2]) for e in glob(ft%'*')]
-        print(subjects)
-
-        json.dump(subjects, open('/tmp/subjects.json','w'))
-        #subjects = json.load(open('/tmp/subjects.json'))
-
-        log.info('Collecting snapshots and shuffling. (%s)'%ft)
-        for s in subjects:
-            snapshots[s] = []
-            fn = ft%(s)
-            snapshots[s].append(glob(fn)[0][len(dd):][1:])
-        json.dump(snapshots, open(fp, 'w'), indent=4)
-        log.info('Saving file %s...'%fp)
-
-    else:
-        log.info('Reading existing file %s...'%fp)
-        snapshots = json.load(open(fp))
-
-    return snapshots
-
 
 class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
@@ -75,6 +41,7 @@ class AuthLoginHandler(BaseHandler):
             'carles', 'jordi', 'mahnaz', 'anna', 'eider', 'natalia', 'joseluis',
              'karine', 'marc', 'mmila', 'mcrous', 'aleix', 'chema']
         log.info('Default users: %s'%users)
+
         for each in users:
             if username == each and password == each:
                 return True
@@ -100,12 +67,15 @@ class AuthLoginHandler(BaseHandler):
 class DownloadHandler(BaseHandler):
     def get(self):
         username = str(self.current_user[1:-1], 'utf-8')
+        wd = self.get_argument('s', None)
+        log.info('Snapshot type: %s'%wd)
 
-        file_name = '/tmp/scores_%s.xls'%username
+        fn = op.join(self.wd, wd, 'ratings', 'scores_%s_%s.xls'%(wd, username))
+
         buf_size = 4096
         self.set_header('Content-Type', 'application/octet-stream')
-        self.set_header('Content-Disposition', 'attachment; filename=' + op.basename(file_name))
-        with open(file_name, 'rb') as f:
+        self.set_header('Content-Disposition', 'attachment; filename=' + op.basename(fn))
+        with open(fn, 'rb') as f:
             while True:
                 data = f.read(buf_size)
                 if not data:
@@ -113,9 +83,12 @@ class DownloadHandler(BaseHandler):
                 self.write(data)
         self.finish()
 
+    def initialize(self, wd):
+        self.wd = wd
 
-def find_next_bad(subject, tests):
-    subjects = json.load(open('/tmp/subjects.json'))
+def find_next_bad(subject, tests, subjects):
+    test_names = tests.columns
+    tn = test_names[0]
 
     failed = sorted([int(subjects.index(e))+1 for e in tests.query('not %s'%tn).index])
     if subject in failed:
@@ -128,30 +101,35 @@ def find_next_bad(subject, tests):
 
 class PostHandler(BaseHandler):
     def post(self):
-        subjects = json.load(open('/tmp/subjects.json'))
-        username = str(self.current_user[1:-1], 'utf-8')
-        n_subjects = len(self.snapshots.keys())
 
-        log.info(self.scores)
+        wd = self.get_argument('pipeline', None)
+        log.info('Snapshot type: %s'%wd)
+        username = str(self.current_user[1:-1], 'utf-8')
+        n_subjects = len(self.snapshots[wd].keys())
+
+        log.info(self.scores[wd])
         log.info('User %s has given following scores: %s'
-            %(username, self.scores[username]))
+            %(username, self.scores[wd][username]))
         score = self.get_argument("score", None)
         comments = self.get_argument("comments", None)
         subject = int(self.get_argument("subject", None))
         then = self.get_argument("then", None)
 
-        log.info('%s was given %s (out of %s) (comments: %s)'
-            %(subject, score, n_subjects, comments))
-        self.scores[username][subject] = [score, comments]
+        log.info('%s (%s) was given %s (out of %s) (comments: %s)'
+            %(subject, self.subjects[wd][subject - 1], score, n_subjects, comments))
 
-        fn = '/tmp/scores_%s.xls'%username
+        self.scores[wd][username][self.subjects[wd][subject-1]] = [score, comments, subject]
+
+
+
+        fn = op.join(self.wd, wd, 'ratings', 'scores_%s_%s.xls'%(wd, username))
         log.info('Writing %s...'%fn)
         data = []
-        for s, v in self.scores[username].items():
+        for s, v in self.scores[wd][username].items():
             row = [s]
             row.extend(v)
             data.append(row)
-        columns = ['ID', 'score', 'comments']
+        columns = ['ID', 'score', 'comments', 'index']
         pd.DataFrame(data, columns=columns).set_index('ID').sort_index().to_excel(fn)
 
         if then == 'next':
@@ -159,19 +137,22 @@ class PostHandler(BaseHandler):
         elif then == 'prev':
             subject = subject - 1 if subject > 1 else n_subjects
         elif then == 'nextbad':
-            subject = find_next_bad(subject, self.tests)
+            subject = find_next_bad(subject, self.tests[wd], self.subjects[wd])
 
         log.info('User %s has given following scores: %s'
-            %(username, self.scores[username]))
+            %(username, self.scores[wd][username]))
 
-        score, comments = self.scores[username].get(subject, ['', ''])
+        score, comments, index = self.scores[wd][username].get(self.subjects[wd][subject - 1], ['', '', ''])
         res = [score, comments, username, subject]
 
         if not self.tests is None:
 
+            test_names = self.tests[wd].columns
+            tn = test_names[0]
 
-            test = str(self.tests.loc[subjects[subject-1]][tn])
-            c = [str(self.tests.loc[subjects[subject-1]][each]) for each in test_names]
+            test = str(self.tests[wd].loc[self.subjects[wd][subject-1]][tn])
+            c = [str(self.tests[wd].loc[self.subjects[wd][subject-1]][each])\
+                for each in test_names]
 
             res.append(test)
             res.append([(i,j) for i,j in zip(test_names, c)])
@@ -180,22 +161,31 @@ class PostHandler(BaseHandler):
             %(subject, score, comments))
         self.write(json.dumps(res))
 
-    def initialize(self, scores, snapshots, tests):
+    def initialize(self, wd, subjects, scores, snapshots, tests):
+        self.wd = wd
+        self.subjects = subjects
         self.scores = scores
         self.snapshots = snapshots
         self.tests = tests
 
+
 class MainHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
+        pipelines = list(self.snapshots.keys())
+        print(pipelines)
+        wd = self.get_argument('s', pipelines[0])
+        log.info('Snapshot type: %s'%wd)
 
+        print(self.current_user)
         username = str(self.current_user[1:-1], 'utf-8')
-        n_subjects = len(self.snapshots.keys())
+        n_subjects = len(self.snapshots[wd].keys())
         id = int(self.get_argument('id', 1))
-        #wd = int(self.get_argument('wd', 'snapshots'))
 
-        fn = '/tmp/scores_%s.xls'%username
+        fn = op.join(self.wd, wd, 'ratings',
+            'scores_%s_%s.xls'%(wd, username))
         log.info('Reading %s...'%fn)
+
         if op.isfile(fn):
             x = pd.read_excel(fn).set_index('ID')
             data = {}
@@ -205,19 +195,22 @@ class MainHandler(BaseHandler):
                     aux = '' if pd.isna(e) else e
                     r.append(aux)
                 data[i] = r
-            self.scores[username] = data
-            value, comment = self.scores[username].get(id, ['',''])
+            self.scores.setdefault(wd , {})
+            self.scores[wd][username] = data
+            value, comment, index = self.scores[wd][username].get(self.subjects[wd][id-1], ['', '', ''])
 
         else:
-            self.scores[username] = {}
+            self.scores[wd] = {}
+            self.scores[wd][username] = {}
             value, comment = ('', '')
 
+        if not self.tests[wd] is None:
+            test_names = self.tests[wd].columns
+            tn = test_names[0]
 
-        subjects = json.load(open('/tmp/subjects.json'))
-
-        if not self.tests is None:
-            test = self.tests.loc[subjects[id-1]][tn]
-            c = [self.tests.loc[subjects[id-1]][each] for each in test_names]
+            test = self.tests[wd].loc[self.subjects[wd][id-1]][tn]
+            c = [self.tests[wd].loc[self.subjects[wd][id-1]][each] \
+                for each in test_names]
             test_unit = '<span class="btn btn-light" id="test%s">%s: %s</span>'
             test_section = ''.join([test_unit%(i, test_key, test_value) \
                 for i, (test_key, test_value) in enumerate(zip(test_names, c))])
@@ -233,13 +226,12 @@ class MainHandler(BaseHandler):
 
         html = ''
 
-        for i, s in enumerate(subjects):
-            imgs = self.snapshots[s]
-            for j, img in enumerate(imgs):
-                img_code = '<img class="subject subject%s" id="image%s" '\
-                    'src="%s">'\
-                    %(i+1, j+1, self.static_url(img))
-                html = html + img_code
+        for i, s in enumerate(self.subjects[wd]):
+            img = self.snapshots[wd][s]
+            img_code = '<img class="subject subject%s" id="image%s" '\
+                'src="%s">'\
+                %(i+1, 1, self.static_url(img))
+            html = html + img_code
 
 
 
@@ -260,14 +252,14 @@ class MainHandler(BaseHandler):
                 </div>
                 <div class="container">
                     <a class="btn btn-{color_btn}" id="score">Your score</a>
-                    <input class="form-control" type="text" name="lname" value="{comment}">
+                    <input class="form-control" placeholder="Your comment" type="text" name="lname" value="{comment}">
                 </div>
                 <div class="container">
                     <a class="btn btn-primary" id="prevsubj" href="">
                         previous subject</a>
                     <a class="btn btn-primary" id="nextsubj" href="">
                         next subject</a>
-                    <a class="btn btn-info" id="download" href="download/">
+                    <a class="btn btn-info" id="download" href="download/?s={pipeline}">
                         download</a>
                     <a class="btn btn-danger" id="logout" href="/auth/logout/">
                         logout</a>
@@ -275,7 +267,7 @@ class MainHandler(BaseHandler):
         '''
         color_btn = {-1: 'danger', '' : 'light', 1: 'warning', 0:'success'}[value]
         code = code.format(html=html, id=id, n_subjects=n_subjects,
-            test_section=test_section,
+            test_section=test_section, pipeline=wd,
             username=username, color_btn=color_btn, comment=comment)
         args = {'danger':'', 'datasource':'', 'database':'/tmp',
             'rate_subjects': code,
@@ -283,10 +275,12 @@ class MainHandler(BaseHandler):
             'visible_subject': id}
 
         log.info('User %s has given following scores: %s'
-            %(username, self.scores[username]))
+            %(username, self.scores[wd][username]))
         self.render("html/index.html", username = username, **args)
 
-    def initialize(self, scores, snapshots, tests):
+    def initialize(self, wd, subjects, scores, snapshots, tests):
+        self.wd = wd
+        self.subjects = subjects
         self.scores = scores
         self.snapshots = snapshots
         self.tests = tests
@@ -294,37 +288,102 @@ class MainHandler(BaseHandler):
 class XNATHandler(BaseHandler):
     def post(self):
         src = self.get_argument('src')
+        print(src)
         import os.path as op
-        eid = '_'.join(op.basename(src).split('?')[0][6:].split('_')[:2])
-        print(eid)
+        eid = op.basename(src).split('?')[0].split('.')[0]
+
         url = 'https://barcelonabrainimaging.org/data/'\
             'experiments/%s?format=html' % eid
         print(url)
         self.write('"%s"'%eid)
 
-    def initialize(self, scores, snapshots, tests):
+    def initialize(self, wd, subjects, scores, snapshots, tests):
+        self.wd = wd
+        self.subjects = subjects
         self.scores = scores
         self.snapshots = snapshots
         self.tests = tests
 
+def collect_tests(wd):
+    folders = [op.basename(e) for e in glob(op.join(wd, '*')) if op.isdir(e)]
+    tests = {}
+    log.info('=== Summary of tests ===')
+    for f in folders:
+        fp = op.join(wd, f, '%s.xls'%f)
+        if not op.isfile(fp):
+            msg = 'File not found (%s)'%fp
+            log.warning(msg)
+            tests[f] = None
+        else:
+            tests[f] = pd.read_excel(fp).set_index('ID')
+
+            log.info('[%s] %s subjects found - %s tests'\
+                %(f, len(tests[f]), len(tests[f].columns)))
+    return tests
+
+def collect_snapshots(wd, subjects):
+    folders = [op.basename(e) for e in glob(op.join(wd, '*')) if op.isdir(e)]
+    snapshots = {}
+    log.info('=== Summary of snapshots ===')
+    for f in folders:
+        sd = op.join(wd, f, 'snapshots')
+        if not op.isdir(sd):
+            msg = 'Snapshot directory not found (%s)'%sd
+            raise Exception(msg)
+        else:
+            snapshots[f] = {}
+            for s in subjects[f]:
+                fp = op.join(sd, '%s.jpg'%s)
+                assert(op.isfile(fp))
+                snapshots[f][s] = op.abspath(fp)
+
+        log.info('[%s] %s snapshots found'\
+            %(f, len(snapshots[f])))
+
+    return snapshots
+
+def collect_subjects(wd):
+    folders = [op.basename(e) for e in glob(op.join(wd, '*')) if op.isdir(e)]
+    subjects = {}
+    log.info('=== Summary of subjects ===')
+    for f in folders:
+        fp = op.join(wd, f, 'subjects.json')
+        if not op.isfile(fp):
+            msg = 'File not found (%s). Using default list based on snapshots'%fp
+            log.warning(msg)
+            l = [op.basename(e).split('.')[0] \
+                for e in glob(op.join(wd, f, 'snapshots', '*.jpg'))]
+            subjects[f] = l
+        else:
+            subjects[f] = json.load(open(fp))
+
+        log.info('[%s] %s subjects found'%(f, len(subjects[f])))
+    return subjects
+
+
 class Application(tornado.web.Application):
     def __init__(self, args):
         self.scores = {}
-        self.tests = None if args.data is None else\
-            pd.read_excel(args.data).set_index('ID')
+        wd = op.abspath(args.d)
 
-        self.snapshots = collect_snapshots()
-        log.info('Images: %s'%self.snapshots)
+        self.subjects = collect_subjects(wd)
+        self.tests = collect_tests(wd)
+        self.snapshots = collect_snapshots(wd, self.subjects)
+
+        params = {'subjects': self.subjects,
+                  'snapshots': self.snapshots,
+                  'scores': self.scores,
+                  'tests': self.tests,
+                  'wd': wd}
 
         handlers = [
-            (r"/", MainHandler, dict(snapshots=self.snapshots, scores=self.scores, tests=self.tests)),
+            (r"/", MainHandler, params),
             (r"/auth/login/", AuthLoginHandler),
             (r"/auth/logout/", AuthLogoutHandler),
-            (r"/post/", PostHandler, dict(snapshots=self.snapshots, scores=self.scores, tests=self.tests)),
-            (r"/xnat/", XNATHandler, dict(snapshots=self.snapshots, scores=self.scores, tests=self.tests)),
-            (r"/download/", DownloadHandler)
+            (r"/post/", PostHandler, params),
+            (r"/xnat/", XNATHandler, params),
+            (r"/download/", DownloadHandler, dict(wd=wd)) ]
 
-        ]
         s = {
             "autoreload":False,
             "template_path":settings.TEMPLATE_PATH,
@@ -341,16 +400,18 @@ def main(args):
     http_server.listen(args.port)
 
     t = tornado.ioloop.IOLoop.instance()
-    t.start()
+    return http_server, t
 
+def create_parser():
+    parser = argparse.ArgumentParser(description='sample argument')
+    parser.add_argument('-d', required=True)
+    parser.add_argument('--port', required=False, default=8890)
+    return parser
 
-import argparse
-import pandas as pd
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='sample argument')
-    parser.add_argument('--data', required=False, default=None)
-    parser.add_argument('--port', required=False, default=8890)
+    parser = create_parser()
     args = parser.parse_args()
-    main(args)
+    server, t = main(args)
+    t.start()
