@@ -37,10 +37,13 @@ class AuthLoginHandler(BaseHandler):
         self.render("html/login.html", errormessage = errormessage)
 
     def check_permission(self, password, username):
-        users = ['greg', 'gemma', 'raffaele', 'oriol', 'gonzalo', 'juando',
-            'carles', 'jordi', 'mahnaz', 'anna', 'eider', 'natalia', 'joseluis',
-             'karine', 'marc', 'mmila', 'mcrous', 'aleix', 'chema']
-        log.info('Default users: %s'%users)
+        fp = op.join(self.wd, 'users.json')
+        if not op.isfile(fp):
+            log.error('File not found (%s). Using default user: guest')
+            users = ['guest']
+        else:
+            users = json.load(open(fp))
+        log.info('Known users: %s'%users)
 
         for each in users:
             if username == each and password == each:
