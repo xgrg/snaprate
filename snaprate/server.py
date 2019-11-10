@@ -51,7 +51,7 @@ class AuthLoginHandler(BaseHandler):
     def check_permission(self, password, username):
         fp = op.join(self.wd, 'users.json')
         if not op.isfile(fp):
-            log.error('File not found (%s). Using default user: guest')
+            log.error('File not found (%s). Using default user: guest'%fp)
             users = ['guest']
         else:
             users = json.load(open(fp))
@@ -144,6 +144,12 @@ class PostHandler(BaseHandler):
         self.scores[wd][username][self.subjects[wd][subject-1]] = [score, comments, subject]
 
         fn = op.join(self.wd, wd, 'ratings', 'scores_%s_%s.xls'%(wd, username))
+
+        if not op.isdir(op.dirname(fn)):
+            import os
+            log.info('Creating folder %s'%op.dirname(fn))
+            os.mkdir(op.dirname(fn))
+
         log.info('Writing %s...'%fn)
         data = []
         for s, v in self.scores[wd][username].items():
