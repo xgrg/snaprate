@@ -20,7 +20,7 @@ different snapshots. As a result, the subject's identifier gets
  incremented/decremented. Any given ID may be accessed through direct URL:
  `<host>:<port>?id=<ID>` (ex: *localhost:8888?id=42*).
 
-- Button `Your score` is for the user to quality current snapshot. Clicking on
+- Button `Your score` is for the user to review the current snapshot. Clicking on
 it multiple times would turn it from not rated to green, then red, then orange,
 then back to not rated. The text box located just under this button is for
 potential comments. To save your review, just move on to the following/previous
@@ -39,20 +39,16 @@ Nevertheless, button `download` allows to save them locally in an Excel table.
 ## Usage:
 
 - **Server-side**:
-  - place a collection of snapshots in `$PATH/web/images/`
-  - rewrite the `collect_snapshots` function in `snaprate/snaprate.py` so as to
-     return lists of paths to snapshots indexed by subject
-  - run the web server (`python $PATH/python/snaprate/snaprate.py`)
+  - place a collection of snapshots in `$PATH/web/data/` (Note: follow the
+    structure of the default folder provided)
+  - run the web server (`python $PATH/snaprate/server.py`)
 
 - **Client-side**: open a browser pointing to the server address (and defined
   port (default:8890))
 
 **Note:** this code was initially written to allow comparisons across different
-methods over a group of subjects. In this context, inputs should follow a
-certain format, as explained earlier and as implemented in `validate()`
-(`web/html/index.html`).
-Hence it may be adapted to various applications (even when snapshots come from
-  one method only) e.g. by rewriting `validate()`.
+methods over a group of subjects. In this context, please refer to the branch
+named [`hipposeg_comparison`](https://github.com/xgrg/snaprate/tree/hipposeg_comparison).
 
 ## Dependencies:
 
@@ -61,4 +57,4 @@ Hence it may be adapted to various applications (even when snapshots come from
 
 ## Live action
 
-![liveaction](demo.gif)
+![liveaction](liveaction.jpg)
