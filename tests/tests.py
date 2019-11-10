@@ -22,7 +22,7 @@ class TestSnaprateApp(AsyncHTTPTestCase):
 
         with mock.patch.object(BaseHandler, 'get_secure_cookie') as m:
             m.return_value = bytes('"tornado"', 'utf-8')
-            m.check_permission('guest', 'guest')
+            response = self.fetch('/auth/login/')
 
             response = self.fetch('/', method='GET')
             data = {'username': 'guest',
