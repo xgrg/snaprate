@@ -40,7 +40,13 @@ class AuthLoginHandler(BaseHandler):
             errormessage = self.get_argument("error")
         except:
             errormessage = ""
-        self.render("html/login.html", errormessage = errormessage)
+        types = ''
+
+        folders = [op.basename(e) for e in glob(op.join(self.wd, '*')) if op.isdir(e)]
+        snapshots_types = folders
+        for each in snapshots_types:
+            types = types + '<li><a href="#" resource="%s">%s</a></li>'%(each, each)
+        self.render("html/login.html", errormessage = errormessage, types=types)
 
     def check_permission(self, password, username):
         fp = op.join(self.wd, 'users.json')
@@ -80,6 +86,7 @@ class AuthLoginHandler(BaseHandler):
         self.wd = wd
 
 class DownloadHandler(BaseHandler):
+    @tornado.web.authenticated
     def get(self):
         username = str(self.current_user[1:-1], 'utf-8')
         wd = self.get_argument('s', None)
@@ -115,6 +122,7 @@ def find_next_bad(subject, tests, subjects):
     return ns
 
 class PostHandler(BaseHandler):
+    @tornado.web.authenticated
     def post(self):
 
         wd = self.get_argument('pipeline', None)
@@ -134,8 +142,6 @@ class PostHandler(BaseHandler):
             %(subject, self.subjects[wd][subject - 1], score, n_subjects, comments))
 
         self.scores[wd][username][self.subjects[wd][subject-1]] = [score, comments, subject]
-
-
 
         fn = op.join(self.wd, wd, 'ratings', 'scores_%s_%s.xls'%(wd, username))
         log.info('Writing %s...'%fn)
@@ -184,11 +190,9 @@ class MainHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         pipelines = list(self.snapshots.keys())
-        print(pipelines)
         wd = self.get_argument('s', pipelines[0])
         log.info('Snapshot type: %s'%wd)
 
-        print(self.current_user)
         username = str(self.current_user[1:-1], 'utf-8')
         n_subjects = len(self.snapshots[wd].keys())
         id = int(self.get_argument('id', 1))
@@ -293,15 +297,14 @@ class MainHandler(BaseHandler):
         _initialize(self, **kwargs)
 
 class XNATHandler(BaseHandler):
+    @tornado.web.authenticated
     def post(self):
         src = self.get_argument('src')
-        print(src)
         import os.path as op
         eid = op.basename(src).split('?')[0].split('.')[0]
 
         url = 'https://barcelonabrainimaging.org/data/'\
             'experiments/%s?format=html' % eid
-        print(url)
         self.write('"%s"'%eid)
 
     def initialize(self, **kwargs):
@@ -356,7 +359,7 @@ def collect_subjects(wd):
             log.warning(msg)
             l = [op.basename(e).split('.')[0] \
                 for e in glob(op.join(wd, f, 'snapshots', '*.jpg'))]
-            subjects[f] = l
+            subjects[f] = sorted(l)
         else:
             subjects[f] = json.load(open(fp))
 
@@ -368,6 +371,7 @@ class Application(tornado.web.Application):
     def __init__(self, args):
         self.scores = {}
         wd = op.abspath(args.d)
+        log.info('Data directory: %s'%wd)
 
         self.subjects = collect_subjects(wd)
         self.tests = collect_tests(wd)
@@ -388,10 +392,10 @@ class Application(tornado.web.Application):
             (r"/download/", DownloadHandler, dict(wd=wd)) ]
 
         s = {
-            "autoreload":False,
-            "template_path":settings.TEMPLATE_PATH,
-            "static_path":settings.STATIC_PATH,
-            "debug":settings.DEBUG,
+            "autoreload": True,
+            "template_path": settings.TEMPLATE_PATH,
+            "static_path": settings.STATIC_PATH,
+            "debug": settings.DEBUG,
             "cookie_secret": settings.COOKIE_SECRET,
             "login_url": "/auth/login/"
         }
@@ -407,7 +411,7 @@ def main(args):
 
 def create_parser():
     parser = argparse.ArgumentParser(description='sample argument')
-    parser.add_argument('-d', required=True)
+    parser.add_argument('-d', required=False, default='web/data')
     parser.add_argument('--port', required=False, default=8890)
     return parser
 

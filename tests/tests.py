@@ -1,6 +1,6 @@
 from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
 import argparse
-from snaprate.server import main, create_parser, MainHandler
+from snaprate.server import main, create_parser, MainHandler, BaseHandler
 import mock
 from urllib.parse import urlencode
 
@@ -14,22 +14,35 @@ class UserAPITest(AsyncHTTPTestCase):
 class TestSnaprateApp(AsyncHTTPTestCase):
     def get_app(self):
         parser = create_parser()
-        args = parser.parse_args(['-d', 'tests/data', '--port', '8899'])
+        args = parser.parse_args(['--port', '8899'])
         server, t = main(args)
         return server
 
     def test_homepage(self):
-        response = self.fetch('/logout')
-        response = self.fetch('/')
-        with mock.patch.object(MainHandler, 'get_secure_cookie') as m:
-            m.return_value = bytes('"tornado"', 'utf-8')
-            response = self.fetch('/', method='GET')
-            data = {"score": 0,
-               "comments": 'comment',
-               "subject":1,
-               "pipeline":'PIPELINE1',
-               "then":2}
 
-            response = self.fetch('/post', method='POST', body=urlencode(data))
-            data = {"s": 'PIPELINE1'}
-            response = self.fetch('/download', method='GET')
+        with mock.patch.object(BaseHandler, 'get_secure_cookie') as m:
+            m.return_value = bytes('"tornado"', 'utf-8')
+            m.check_permission('guest', 'guest')
+
+            response = self.fetch('/', method='GET')
+            data = {'username': 'guest',
+               'password': 'guest',
+               'resource':'PIPELINE1'}
+            response = self.fetch('/auth/login/', method='POST',
+                body=urlencode(data))
+            response = self.fetch('/')
+
+            for each in ['next', 'prev', 'nextbad']:
+                data = {"score": 0,
+                   "comments": 'comment',
+                   "subject":1,
+                   "pipeline":'PIPELINE1',
+                   "then":each}
+                response = self.fetch('/post/', method='POST',
+                    body=urlencode(data))
+
+            response = self.fetch('/download/?s=PIPELINE1', method='GET')
+            data = {"src": 'BBRC_E00010'}
+            response = self.fetch('/xnat/', method='POST',
+                body=urlencode(data))
+            response = self.fetch('/auth/logout/')
