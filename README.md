@@ -47,8 +47,8 @@ Nevertheless, button `download` allows to save them locally in an Excel table.
   port (default:8890))
 
 **Note:** this code was initially written to allow comparisons across different
-methods over a group of subjects. In this context, please refer to the branch
-named [`hipposeg_comparison`](https://github.com/xgrg/snaprate/tree/hipposeg_comparison).
+methods over a group of subjects. For this kind of application, please refer to the
+branch named [`hipposeg_comparison`](https://github.com/xgrg/snaprate/tree/hipposeg_comparison).
 
 ## Dependencies:
 
