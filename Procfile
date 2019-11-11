@@ -1,1 +1,1 @@
-web: python snaprate/server.py --port $PORT
+web: python snaprate/server.py -d web/tests --port $PORT
