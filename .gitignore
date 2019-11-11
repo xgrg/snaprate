@@ -1,2 +1,3 @@
-/web/data*
-/web/images*
+/web/data/*
+__pycache__/
+*.py[cod]
