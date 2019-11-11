@@ -23,7 +23,7 @@ class TestSnaprateApp(AsyncHTTPTestCase):
         with mock.patch.object(BaseHandler, 'get_secure_cookie') as m:
             m.return_value = bytes('"tornado"', 'utf-8')
             response = self.fetch('/auth/login/')
-
+            response = self.fetch('/spam')
             response = self.fetch('/', method='GET')
             data = {'username': 'guest',
                'password': 'guest',
@@ -31,6 +31,7 @@ class TestSnaprateApp(AsyncHTTPTestCase):
             response = self.fetch('/auth/login/', method='POST',
                 body=urlencode(data))
             response = self.fetch('/')
+            response = self.fetch('/?s=spam')
 
             for each in ['next', 'prev', 'nextbad']:
                 data = {"score": 0,

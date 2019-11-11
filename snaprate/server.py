@@ -206,9 +206,9 @@ class MainHandler(BaseHandler):
         folders = [op.basename(e) for e in glob(op.join(self.wd, '*')) \
             if op.isdir(e)]
         if not wd in folders:
+            self.clear()
             self.redirect('/')
-
-
+            return            
 
         log.info('Snapshot type: %s'%wd)
 
