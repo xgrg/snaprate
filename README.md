@@ -9,6 +9,13 @@ The tool works as a web application where experts can review snapshots across su
 Users may start a session on the system using individual login/password opening a
 browser to the local network address where the server is running.
 
+
+## Demo
+
+http://snaprate.herokuapp.com (user/password: *guest*/*guest*)
+
+## Usage
+
 Once the server is running, users may log in using their
 attributed credentials to start their review from the main screen:
 
@@ -36,7 +43,7 @@ matter.
 Nevertheless, button `download` allows to save them locally in an Excel table.
 
 
-## Usage:
+## Setup
 
 - **Server-side**:
   - place a collection of snapshots in `$PATH/web/data/` (Note: follow the
@@ -50,7 +57,7 @@ Nevertheless, button `download` allows to save them locally in an Excel table.
 methods over a group of subjects. For this kind of application, please refer to the
 branch named [`hipposeg_comparison`](https://github.com/xgrg/snaprate/tree/hipposeg_comparison).
 
-## Dependencies:
+## Dependencies
 
 - tornado
 - pandas
