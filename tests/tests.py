@@ -14,7 +14,7 @@ class UserAPITest(AsyncHTTPTestCase):
 class TestSnaprateApp(AsyncHTTPTestCase):
     def get_app(self):
         parser = create_parser()
-        args = parser.parse_args(['--port', '8899'])
+        args = parser.parse_args(['-d', 'web/tests', '--port', '8899'])
         server, t = main(args)
         return server
 
