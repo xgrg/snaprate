@@ -14,6 +14,12 @@ from tornado.options import define, options
 import logging as log
 import argparse
 
+class My404Handler(tornado.web.RequestHandler):
+    # Override prepare() instead of get() to cover all possible HTTP methods.
+    def prepare(self):
+        self.set_status(404)
+        self.redirect('/')
+
 def _initialize(self, wd, subjects, scores, snapshots, tests):
     self.wd = wd
     self.subjects = subjects
@@ -197,6 +203,13 @@ class MainHandler(BaseHandler):
     def get(self):
         pipelines = list(self.snapshots.keys())
         wd = self.get_argument('s', pipelines[0])
+        folders = [op.basename(e) for e in glob(op.join(self.wd, '*')) \
+            if op.isdir(e)]
+        if not wd in folders:
+            self.redirect('/')
+
+
+
         log.info('Snapshot type: %s'%wd)
 
         username = str(self.current_user[1:-1], 'utf-8')
@@ -405,7 +418,8 @@ class Application(tornado.web.Application):
             "cookie_secret": settings.COOKIE_SECRET,
             "login_url": "/auth/login/"
         }
-        tornado.web.Application.__init__(self, handlers, autoescape=None, **s)
+        tornado.web.Application.__init__(self, handlers,
+            default_handler_class=My404Handler, autoescape=None, **s)
 
 
 def main(args):
