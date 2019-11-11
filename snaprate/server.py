@@ -13,6 +13,7 @@ import json
 from tornado.options import define, options
 import logging as log
 import argparse
+from datetime import datetime
 
 class My404Handler(tornado.web.RequestHandler):
     # Override prepare() instead of get() to cover all possible HTTP methods.
@@ -150,8 +151,21 @@ class PostHandler(BaseHandler):
         log.info('%s (%s) was given %s (out of %s) (comments: %s)'
             %(subject, self.subjects[wd][subject - 1], score, n_subjects, comments))
 
-        self.scores[wd][username][self.subjects[wd][subject-1]] = [score, comments, subject]
+        current_subject = self.subjects[wd][subject - 1]
 
+
+        res = self.scores[wd][username].get(current_subject, ['', '', '', ''])
+        old_score, old_comments, _, old_dt = res
+
+        has_changed = not current_subject in self.scores[wd][username].keys() \
+            or (old_score != score or old_comments != comments)
+
+        if has_changed:
+            dt = datetime.strftime(datetime.now(), '%Y%m%d-%H%M%S')
+        else:
+            dt = old_dt
+
+        self.scores[wd][username][current_subject] = [score, comments, subject, dt]
         fn = op.join(self.wd, wd, 'ratings', 'scores_%s_%s.xls'%(wd, username))
 
         if not op.isdir(op.dirname(fn)):
@@ -165,7 +179,7 @@ class PostHandler(BaseHandler):
             row = [s]
             row.extend(v)
             data.append(row)
-        columns = ['ID', 'score', 'comments', 'index']
+        columns = ['ID', 'score', 'comments', 'index', 'datetime']
         pd.DataFrame(data, columns=columns).set_index('ID').sort_index().to_excel(fn)
 
         if then == 'next':
@@ -178,7 +192,10 @@ class PostHandler(BaseHandler):
         log.info('User %s has given following scores: %s'
             %(username, self.scores[wd][username]))
 
-        score, comments, index = self.scores[wd][username].get(self.subjects[wd][subject - 1], ['', '', ''])
+        current_subject = self.subjects[wd][subject - 1]
+        
+        res = self.scores[wd][username].get(current_subject, ['', '', '', ''])
+        score, comments, index, dt = res
         res = [score, comments, username, subject]
 
         if not self.tests is None:
@@ -234,7 +251,7 @@ class MainHandler(BaseHandler):
                 data[i] = r
             self.scores.setdefault(wd , {})
             self.scores[wd][username] = data
-            value, comment, index = self.scores[wd][username].get(self.subjects[wd][id-1], ['', '', ''])
+            value, comment, index, dt = self.scores[wd][username].get(self.subjects[wd][id-1], ['', '', '', ''])
 
         else:
             self.scores[wd] = {}
@@ -370,7 +387,8 @@ def collect_snapshots(wd, subjects):
             snapshots[f] = {}
             for s in subjects[f]:
                 fp = op.join(sd, '%s.jpg'%s)
-                assert(op.isfile(fp))
+                if not op.isfile(fp):
+                    raise Exception('Snapshot not found %s'%fp)
                 snapshots[f][s] = '.' + op.abspath(fp)[len(op.dirname(wd)):]
 
         log.info('[%s] %s snapshots found'\
