@@ -13,14 +13,16 @@
        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
 
        <link href="{{static_url("css/jumbotron.css")}}" rel="stylesheet">
+         <script src="https://unpkg.com/iv-viewer/dist/iv-viewer.js"></script>
 
+         <link rel="stylesheet" href="https://unpkg.com/iv-viewer/dist/iv-viewer.css">
     </head>
     <body>
 
         {{rate_subjects}} <hr>
 
     <script>
-
+    {{images}}
     visible_subject = {{visible_subject}};
 
     visible_image = 1;
@@ -28,6 +30,14 @@
 
     $("img.subject" + visible_subject + "#image1").show();
 
+    function showImage() {
+              visible_class = 'subject' + visible_subject;
+              console.log(visible_class)
+              imgObj = images[visible_subject - 1];
+              viewer.load(imgObj.small, imgObj.big);
+              $("span#subject_number").text(visible_subject);
+              $("span#image_number").text(visible_image);
+            }
 
     function validate(){
       ans = $('input').val();
@@ -98,17 +108,6 @@
       }
     }
 
-    function hide_and_show(){
-      $("img."+visible_class).hide();
-      visible_class = 'subject' + visible_subject;
-      visible_image = 1;
-      visible_id = 'image' + visible_image;
-      $("img."+visible_class+"#image1").show();
-      $("span#subject_number").text(visible_subject);
-      $("span#image_number").text(visible_image);
-
-    }
-
     function get_score(){
       if ($("#score").hasClass('btn-light')) {
           return '';
@@ -128,8 +127,14 @@
     $("a").click(function(e){
       id = $(this).attr('id');
       e.preventDefault();
+
       if (id == 'xnat'){
-         src = $("img.subject"+visible_subject).attr('src')
+         console.log(visible_subject)
+         //src = $("img.subject" + visible_subject).attr('src')
+         imgObj = images[visible_subject - 1];
+         src = imgObj.small;
+
+         console.log(src)
          $.ajax({
                type: "POST",
                url: "/xnat/",
@@ -166,7 +171,7 @@
             visible_subject = visible_subject - 1;
           }
 
-          hide_and_show() //visible_class, visible_subject, visible_image)
+          showImage() //visible_class, visible_subject, visible_image)
         }
       }
       else if (id == "nextsubj"){
@@ -181,7 +186,7 @@
             visible_subject = visible_subject + 1;
           }
 
-          hide_and_show() ; //visible_class, visible_subject, visible_image)
+          showImage() ; //visible_class, visible_subject, visible_image)
         }
       }
       else if (id == 'nextbad'){
@@ -205,7 +210,7 @@
     function save_subject(then){
       s = $.urlParam('s')
       if (s==null){
-        s = 'ASHS'
+        s = ''
       }
 
       $.ajax({
@@ -230,7 +235,7 @@
                 if (then == 'nextbad'){
                   visible_class = 'subject' + visible_subject;
                   visible_subject = parseInt(data[3]);
-                  hide_and_show()
+                  showImage()
                 }
                 if (data.length > 4){
                   color_test(data[4]);
@@ -245,8 +250,9 @@
     }
     $('a#logout').unbind('click')
     $('a#download').unbind('click')
-    //$("span").click(save_subject);
     $("#score").click(cycle_button);
+
+    showImage();
 
 
     </script>

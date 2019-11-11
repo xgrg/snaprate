@@ -261,14 +261,21 @@ class MainHandler(BaseHandler):
         else:
             test_section = ''
 
-        html = ''
+        html = '''<div id="image-gallery">
+                  <div class="image-container"></div>
+                </div>'''
+
+        images_code = 'images = ['
 
         for i, s in enumerate(self.subjects[wd]):
             img = self.snapshots[wd][s]
-            img_code = '<img class="subject subject%s" id="image%s" '\
-                'src="%s">'\
-                %(i+1, 1, self.static_url(img))
-            html = html + img_code
+            img_code = '{small: "%s", big: "%s"},'%(self.static_url(img), self.static_url(img))
+
+            images_code = images_code + img_code
+        images_code = images_code + '];'
+        images_code = images_code + '''wrapper = $("div #image-gallery");
+                viewer = new ImageViewer($(".image-container")[0]);
+                window.viewer = viewer;'''
 
 
 
@@ -309,7 +316,8 @@ class MainHandler(BaseHandler):
         args = {'danger':'', 'datasource':'', 'database':'/tmp',
             'rate_subjects': code,
             'n_subjects': n_subjects,
-            'visible_subject': id}
+            'visible_subject': id,
+            'images':images_code}
 
         log.info('User %s has given following scores: %s'
             %(username, self.scores[wd][username]))
@@ -363,7 +371,7 @@ def collect_snapshots(wd, subjects):
             for s in subjects[f]:
                 fp = op.join(sd, '%s.jpg'%s)
                 assert(op.isfile(fp))
-                snapshots[f][s] = op.abspath(fp)
+                snapshots[f][s] = '.' + op.abspath(fp)[len(op.dirname(wd)):]
 
         log.info('[%s] %s snapshots found'\
             %(f, len(snapshots[f])))

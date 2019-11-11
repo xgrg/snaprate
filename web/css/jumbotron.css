@@ -25,3 +25,48 @@ img.subject{
 input{
   color:black;
 }
+
+#image-gallery {
+        width: 100%;
+        position: relative;
+        height: 650px;
+        background: #000;
+      }
+
+      #image-gallery .image-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 50px;
+      }
+
+      #image-gallery .prev,
+      #image-gallery .next {
+        position: absolute;
+        height: 32px;
+        margin-top: -66px;
+        top: 50%;
+      }
+
+      #image-gallery .prev {
+        left: 20px;
+      }
+
+      #image-gallery .next {
+        right: 20px;
+        cursor: pointer;
+      }
+
+      #image-gallery .footer-info {
+        position: absolute;
+        height: 50px;
+        width: 100%;
+        left: 0;
+        bottom: 0;
+        line-height: 50px;
+        font-size: 24px;
+        text-align: center;
+        color: white;
+        border-top: 1px solid #fff;
+      }
