@@ -32,6 +32,7 @@ class TestSnaprateApp(AsyncHTTPTestCase):
                 body=urlencode(data))
             response = self.fetch('/')
             response = self.fetch('/?s=spam')
+            response = self.fetch('/download/?s=PIPELINE1', method='GET')
 
             for each in ['next', 'prev', 'nextbad']:
                 data = {"score": 0,

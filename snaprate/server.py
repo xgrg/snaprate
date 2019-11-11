@@ -99,6 +99,9 @@ class DownloadHandler(BaseHandler):
         log.info('Snapshot type: %s'%wd)
 
         fn = op.join(self.wd, wd, 'ratings', 'scores_%s_%s.xls'%(wd, username))
+        if not op.isfile(fn):
+            self.write('<script>alert("Please review at least one subject before downloading Excel table.")"</script>')
+            return
 
         buf_size = 4096
         self.set_header('Content-Type', 'application/octet-stream')
@@ -208,7 +211,7 @@ class MainHandler(BaseHandler):
         if not wd in folders:
             self.clear()
             self.redirect('/')
-            return            
+            return
 
         log.info('Snapshot type: %s'%wd)
 
