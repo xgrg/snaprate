@@ -49,6 +49,13 @@ class AuthLoginHandler(BaseHandler):
             errormessage = ""
         types = ''
 
+        fp = op.join(self.wd, 'users.json')
+        if not op.isfile(fp):
+            msg = '''<img width=16 src="https://upload.wikimedia.org/wikipedia/en/2/28/Information.svg"><span style="color:darksalmon">
+                <i>Guest account activated (guest/guest)</i></span>'''
+            errormessage = errormessage + '<br>' + msg
+
+
         folders = [op.basename(e) for e in glob(op.join(self.wd, '*')) if op.isdir(e)]
         snapshots_types = folders
         for each in snapshots_types:
@@ -77,10 +84,9 @@ class AuthLoginHandler(BaseHandler):
         auth = self.check_permission(password, username)
         if auth:
             self.set_current_user(username)
-            #self.redirect(self.get_argument("next", u"/?s='FREESURFER6_HIRES'")) #"?s=%s"%resource))
             self.redirect(u"/?s=%s"%resource)
         else:
-            error_msg = u"?error=" + tornado.escape.url_escape("Login incorrect")
+            error_msg = u"?error=" + tornado.escape.url_escape("Wrong login/password.")
             self.redirect(u"/auth/login/" + error_msg)
 
     def set_current_user(self, user):
@@ -193,7 +199,7 @@ class PostHandler(BaseHandler):
             %(username, self.scores[wd][username]))
 
         current_subject = self.subjects[wd][subject - 1]
-        
+
         res = self.scores[wd][username].get(current_subject, ['', '', '', ''])
         score, comments, index, dt = res
         res = [score, comments, username, subject]
@@ -440,7 +446,7 @@ class Application(tornado.web.Application):
             (r"/download/", DownloadHandler, dict(wd=wd)) ]
 
         s = {
-            "autoreload": True,
+            "autoreload": False,
             "template_path": settings.TEMPLATE_PATH,
             "static_path": settings.STATIC_PATH,
             "debug": settings.DEBUG,

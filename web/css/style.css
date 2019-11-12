@@ -9,6 +9,10 @@ body, html {
     padding: 40px 40px;
 }
 
+i {
+  font-size: 10px; vertical-align:middle; color:#0069c5
+}
+
 .btn {
     font-weight: 700;
     height: 36px;
