@@ -2,6 +2,8 @@
 
 [![pipeline status](https://img.shields.io/travis/xgrg/snaprate.svg)](https://travis-ci.org/xgrg/snaprate)
 [![pipeline Status](https://coveralls.io/repos/github/xgrg/snaprate/badge.svg?branch=master)](https://coveralls.io/github/xgrg/snaprate?branch=master)
+[![DOI](https://zenodo.org/badge/152098843.svg)](https://zenodo.org/badge/latestdoi/152098843)
+
 
 Collect quality control scores from a panel of experts.
 
