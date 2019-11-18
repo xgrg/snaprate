@@ -47,4 +47,7 @@ class TestSnaprateApp(AsyncHTTPTestCase):
             data = {"src": 'BBRC02_E07373'}
             response = self.fetch('/xnat/', method='POST',
                 body=urlencode(data))
+
             response = self.fetch('/auth/logout/')
+            response = self.fetch('/stats/')
+            response = self.fetch('/stats/?s=PIPELINE1')

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+       <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+       <meta charset="utf-8">
+       <meta http-equiv="X-UA-Compatible" content="IE=edge">
+       <meta name="viewport" content="width=device-width, initial-scale=1">
+       <meta name="description" content="">
+       <meta name="author" content="">
+
+       <title>snaprate</title>
+       <link href="{{static_url("css/jumbotron.css")}}" rel="stylesheet">
+
+       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+       <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+       <script src="{{static_url("js/stats.js")}}" ></script>
+
+
+    </head>
+    <body style="color:black;
+          background-color:white;
+          padding:10%;
+          white-space:pre-wrap;
+          word-wrap:break-word;
+
+          td.correct {
+              background-color: #9f0;
+          }
+
+          td.doubtful {
+              background-color: #fa0;
+          }
+
+          td.failed {
+              background-color: #f30;
+          }">
+
+      {{table}}
+
+      {{total_counter}}
+      {{comments}}
+
+      <a href="/">Back to review</a>
+    </body>
+</html>

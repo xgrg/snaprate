@@ -204,7 +204,8 @@ class PostHandler(BaseHandler):
         score, comments, index, dt = res
         res = [score, comments, username, subject]
 
-        if not self.tests is None:
+
+        if not self.tests[wd] is None:
 
             test_names = self.tests[wd].columns
             tn = test_names[0]
@@ -215,6 +216,7 @@ class PostHandler(BaseHandler):
 
             res.append(test)
             res.append([(i,j) for i,j in zip(test_names, c)])
+            print(res)
 
         log.info('Next subject: %s (%s) (%s)'
             %(subject, score, comments))
@@ -349,6 +351,123 @@ class MainHandler(BaseHandler):
     def initialize(self, **kwargs):
         _initialize(self, **kwargs)
 
+
+def get_stats(wd, pipeline):
+
+    scores_fn = glob(op.join(wd, pipeline, 'ratings',
+        'scores_%s_*.xls'%pipeline))
+
+    subjects = collect_subjects(wd)[pipeline]
+
+    df = [pd.read_excel(e).set_index('ID') for e in scores_fn]
+    if len(df) == 0:
+        return ('', 0, 0, '')
+
+    names = [e.split('_')[-1].split('.')[0] for e in scores_fn]
+    threshold = 140
+    columns = ['seen', 'reviewed', 'has_finished', 'failed', 'doubtful',
+            'ok', 'commented']
+
+    review = []
+    total_reviews = 0
+    for e, n in zip(df, names):
+        commented = len(e['comments'].dropna())
+        e['experiment_id'] = [i for i in list(e.index)]
+        vc = e['score'].value_counts()
+        failed = vc.loc[-1] if -1 in vc.index else 0
+        doubtful = vc.loc[1] if 1 in vc.index else 0
+        ok = vc.loc[0] if 0 in vc.index else 0
+
+        reviewed = failed + doubtful + ok
+        has_reviewed = reviewed > threshold
+        total_reviews = total_reviews + has_reviewed
+
+        row = [len(e), reviewed, has_reviewed, failed, doubtful, ok,
+            commented]
+        review.append(row)
+    review = pd.DataFrame(review, columns=columns, index=names).sort_values(by='reviewed', ascending=False)
+    del review['has_finished']
+
+    comments = []
+    for e, n in zip(df, names):
+        e['author'] = n
+        e = e.dropna()
+        comments.append(e)
+
+    if len(comments) != 0:
+        comments = pd.concat(comments).sort_index()
+
+        for each in ['datetime', 'experiment_id']:
+            del comments[each]
+
+        col1, col2 = [], []
+        for i, row in comments.iterrows():
+            col1.append('@@@1%s@@@2'%i)
+            col2.append('@@@3%s@@@4'%row['index'])
+
+        comments['XNAT'] = col1
+        comments['snaprate'] = col2
+
+        del comments['index']
+        pd.set_option('display.max_colwidth', -1)
+
+        comments = comments.to_html()
+        d = {'@@@1' : '<a href="https://barcelonabrainimaging.org/data/'\
+            'experiments/',
+             '@@@2' : '?format=html">link</a>',
+             '@@@3' : '<a href="/?s=%s&id='%pipeline,
+             '@@@4' : '">link</a>'}
+        for k, v in d.items():
+            comments = comments.replace(k, v)
+
+    for each in ['comments', 'experiment_id', 'index', 'datetime', 'author']:
+        for e in df:
+            del e[each]
+
+    data = df[0]
+    for each, name in zip(df[1:], names[1:]):
+        data = data.join(each, rsuffix=name, how='outer')
+    data = data.rename(columns=dict(zip(list(data.columns), names)))
+    data = pd.DataFrame(data, columns=names)
+
+    total_pc = len(data.index[~data.isnull().all(1)]) / float(len(subjects)) * 100.0
+    return (review.to_html(), total_pc, total_reviews, comments)
+
+class StatsHandler(BaseHandler):
+    @tornado.web.authenticated
+    def get(self):
+
+        pipelines = list(self.snapshots.keys())
+        pipeline = self.get_argument('s', None)
+
+        fp = op.join(self.wd, 'users.json')
+
+        if pipeline is None:
+            html = ''
+            for each in pipelines:
+                row = '<div><a href="%s">%s</a>: %s</div><br>'
+                res = get_stats(self.wd, each)
+                row = row%('/stats/?s=%s'%each, each, '%.2f'%float(res[1]))
+                html = html + row
+
+            self.render('html/stats.html', table=html,
+                total_counter='', comments='')
+            return
+
+        res = get_stats(self.wd, pipeline)
+        review, total_pc, total_reviews, comments = res
+
+        total_counter = '''<h2><span class="timer count-title count-number" data-to="{total_pc}"
+            data-speed="1500" data-decimals="3"></span><span> % of snapshots
+            have been reviewed</span></h2>'''.format(total_pc=total_pc)
+
+        self.render('html/stats.html', table=review,
+            total_counter=total_counter, comments=comments)
+
+    def initialize(self, **kwargs):
+        _initialize(self, **kwargs)
+
+
 class XNATHandler(BaseHandler):
     @tornado.web.authenticated
     def post(self):
@@ -442,6 +561,7 @@ class Application(tornado.web.Application):
             (r"/auth/login/", AuthLoginHandler, dict(wd=wd)),
             (r"/auth/logout/", AuthLogoutHandler),
             (r"/post/", PostHandler, params),
+            (r"/stats/", StatsHandler, params),
             (r"/xnat/", XNATHandler, params),
             (r"/download/", DownloadHandler, dict(wd=wd)) ]
 
