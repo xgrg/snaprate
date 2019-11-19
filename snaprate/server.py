@@ -171,6 +171,9 @@ class PostHandler(BaseHandler):
         else:
             dt = old_dt
 
+        if score != '':
+            score = int(score)
+
         self.scores[wd][username][current_subject] = [score, comments, subject, dt]
         fn = op.join(self.wd, wd, 'ratings', 'scores_%s_%s.xls'%(wd, username))
 
@@ -249,7 +252,7 @@ class MainHandler(BaseHandler):
         log.info('Reading %s...'%fn)
 
         if op.isfile(fn):
-            x = pd.read_excel(fn, converters={'ID':str}).set_index('ID')
+            x = pd.read_excel(fn, converters={'ID':str, 'score': str}).set_index('ID')
             data = {}
             for i, row in x.iterrows():
                 r = []
@@ -334,6 +337,9 @@ class MainHandler(BaseHandler):
                         logout</a>
                 </div>
         '''
+        print(value)
+        if value != '':
+            value = int(value)
         color_btn = {-1: 'danger', '' : 'light', 1: 'warning', 0:'success'}[value]
         code = code.format(html=html, id=id, n_subjects=n_subjects,
             test_section=test_section, pipeline=wd,

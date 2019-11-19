@@ -32,7 +32,6 @@
 
     function showImage() {
               visible_class = 'subject' + visible_subject;
-              console.log(visible_class)
               imgObj = images[visible_subject - 1];
               viewer.load(imgObj.small, imgObj.big);
               $("span#subject_number").text(visible_subject);
@@ -80,7 +79,7 @@
       $("#score").removeClass("btn-danger");
       $("#score").removeClass("btn-light");
       $("#score").removeClass("btn-warning");
-      if (value == ""){
+      if ("" + value == ""){
         $("#score").addClass("btn-light");
       }
       else{
@@ -129,12 +128,9 @@
       e.preventDefault();
 
       if (id == 'xnat'){
-         console.log(visible_subject)
          //src = $("img.subject" + visible_subject).attr('src')
          imgObj = images[visible_subject - 1];
          src = imgObj.small;
-
-         console.log(src)
          $.ajax({
                type: "POST",
                url: "/xnat/",
