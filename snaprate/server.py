@@ -251,6 +251,8 @@ class MainHandler(BaseHandler):
             'scores_%s_%s.xls'%(wd, username))
         log.info('Reading %s...'%fn)
 
+        self.scores.setdefault(wd , {})
+
         if op.isfile(fn):
             x = pd.read_excel(fn, converters={'ID':str, 'score': str}).set_index('ID')
             data = {}
@@ -260,12 +262,9 @@ class MainHandler(BaseHandler):
                     aux = '' if pd.isna(e) else e
                     r.append(aux)
                 data[i] = r
-            self.scores.setdefault(wd , {})
             self.scores[wd][username] = data
             value, comment, index, dt = self.scores[wd][username].get(self.subjects[wd][id-1], ['', '', '', ''])
-
         else:
-            self.scores[wd] = {}
             self.scores[wd][username] = {}
             value, comment = ('', '')
 
@@ -276,9 +275,23 @@ class MainHandler(BaseHandler):
             test = self.tests[wd].loc[self.subjects[wd][id-1]][tn]
             c = [self.tests[wd].loc[self.subjects[wd][id-1]][each] \
                 for each in test_names]
-            test_unit = '<span class="btn btn-light" id="test%s">%s: %s</span>'
-            test_section = ''.join([test_unit%(i, test_key, test_value) \
-                for i, (test_key, test_value) in enumerate(zip(test_names, c))])
+            test_unit = '<span href="#" data-toggle="tooltip" class="badge badge-light" id="test%s">%s%s</span>'
+            test_section = ''
+            for i, (test_key, test_value) in enumerate(zip(test_names, c)):
+                if test_value == True:
+                    tu = test_unit.replace('badge-light', 'badge-success')
+                    test_section += tu%(i, test_key, '')
+                elif test_value == False:
+                    tu = test_unit.replace('badge-light', 'badge-danger')
+                    test_section += tu%(i, test_key, '')
+                else:
+                    if len(test_value) > 7:
+                        test_value = str(test_value)[:7] + '…'
+                    tu = test_unit%(i, test_key, ': %s'%test_value)
+                    tu = tu.replace(' id', 'title="%s" id'%test_value)
+                    test_section += tu
+
+
 
             color_test = {True:'success', False:'danger'}[test]
 
@@ -318,7 +331,7 @@ class MainHandler(BaseHandler):
 
                     {test_section}
 
-                    <span class="badge badge-light" id="username">{username}</span>
+                    <span class="badge badge-secondary" id="username">{username}</span>
                     <span class="success" style="display:none">SAVED</span>
                     <span class="skipped" style="display:none">SKIPPED</span>
                 </div>
@@ -340,7 +353,7 @@ class MainHandler(BaseHandler):
         print(value)
         if value != '':
             value = int(value)
-        color_btn = {-1: 'danger', '' : 'light', 1: 'warning', 0:'success'}[value]
+        color_btn = {-1: 'danger', '' : 'secondary', 1: 'warning', 0:'success'}[value]
         code = code.format(html=html, id=id, n_subjects=n_subjects,
             test_section=test_section, pipeline=wd,
             username=username, color_btn=color_btn, comment=comment)
@@ -391,9 +404,12 @@ def get_stats(wd, pipeline):
         row = [len(e), reviewed, has_reviewed, failed, doubtful, ok,
             commented]
         review.append(row)
-    review = pd.DataFrame(review, columns=columns, index=names).sort_values(by='reviewed', ascending=False)
+    review = pd.DataFrame(review,
+        columns=columns, index=names).sort_values(by='reviewed',
+            ascending=False)
     del review['has_finished']
 
+    # Compiling comments in a table
     comments = []
     for e, n in zip(df, names):
         e['author'] = n
@@ -430,6 +446,7 @@ def get_stats(wd, pipeline):
         for e in df:
             del e[each]
 
+    # Joining ratings from all users in columns. Each row is a subject
     data = df[0]
     for each, name in zip(df[1:], names[1:]):
         data = data.join(each, rsuffix=name, how='outer')

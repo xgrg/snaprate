@@ -9,9 +9,9 @@
        <meta name="author" content="">
 
        <title>snaprate</title>
-       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
-       <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
-
+       <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+       <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+       <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
        <link href="{{static_url("css/jumbotron.css")}}" rel="stylesheet">
          <script src="https://unpkg.com/iv-viewer/dist/iv-viewer.js"></script>
 
@@ -56,8 +56,8 @@
     }
 
     function cycle_button(e){
-      if ($(this).hasClass("btn-light")) {
-          $(this).removeClass("btn-light");
+      if ($(this).hasClass("btn-secondary")) {
+          $(this).removeClass("btn-secondary");
           $(this).addClass("btn-success");
       }
       else if ($(this).hasClass("btn-success")) {
@@ -70,17 +70,17 @@
       }
       else if ($(this).hasClass("btn-warning")) {
           $(this).removeClass("btn-warning");
-          $(this).addClass("btn-light");
+          $(this).addClass("btn-secondary");
       }
     }
 
     function color_button(value){
       $("#score").removeClass("btn-success");
       $("#score").removeClass("btn-danger");
-      $("#score").removeClass("btn-light");
+      $("#score").removeClass("btn-secondary");
       $("#score").removeClass("btn-warning");
       if ("" + value == ""){
-        $("#score").addClass("btn-light");
+        $("#score").addClass("btn-secondary");
       }
       else{
         value = parseInt(value);
@@ -98,7 +98,7 @@
     function color_test(value){
       $("#test").removeClass("btn-success");
       $("#test").removeClass("btn-danger");
-      $("#test").removeClass("btn-light");
+      $("#test").removeClass("btn-secondary");
       if (value == "True"){
         $("#test").addClass("btn-success");
       }
@@ -108,7 +108,7 @@
     }
 
     function get_score(){
-      if ($("#score").hasClass('btn-light')) {
+      if ($("#score").hasClass('btn-secondary')) {
           return '';
       }
       else if ($("#score").hasClass('btn-danger')) {
@@ -219,7 +219,7 @@
                    "then":then},
             dataType:'json',
             success: function(data) {
-                if ($('#score').hasClass('btn-light')){
+                if ($('#score').hasClass('btn-secondary')){
                     $( "span.skipped" ).fadeIn( 150 ).delay( 100 ).fadeOut( 300 );
                 }
                 else {
@@ -236,7 +236,31 @@
                 if (data.length > 4){
                   color_test(data[4]);
                   for (i = 0 ; i < data[5].length ; i++){
-                    $('#test'+i).text(data[5][i][0]+': ' + data[5][i][1])
+                    $('#test'+i).removeClass("badge-light")
+                    $('#test'+i).removeClass("badge-success")
+                    $('#test'+i).removeClass("badge-danger")
+                    if (data[5][i][1] == 'True'){
+                      $('#test'+i).text(data[5][i][0]) //+': ' + data[5][i][1])
+                      $('#test'+i).addClass("badge-success")
+                    }
+                    else if (data[5][i][1] == 'False'){
+                      $('#test'+i).text(data[5][i][0]) //+': ' + data[5][i][1])
+                      $('#test'+i).addClass("badge-danger")
+                    }
+                    else {
+                      s = data[5][i][1];
+                      if (s.length >7) {
+                        s = s.substring(0, 7) + "…";
+                      }
+
+                      $('#test'+i).text(data[5][i][0]+': ' + s)
+                      $('#test'+i).addClass("badge-light")
+                      $('#test'+i).attr('title', data[5][i][1])
+                      $('#test'+i).attr('data-original-title', data[5][i][1])
+                    }
+                    $('#test'+i).tooltip();
+                    $('[data-toggle="tooltip"]').tooltip();
+
                   }
                 }
                 return data;
@@ -249,6 +273,7 @@
     $("#score").click(cycle_button);
 
     showImage();
+    $('[data-toggle="tooltip"]').tooltip();
 
 
     </script>
