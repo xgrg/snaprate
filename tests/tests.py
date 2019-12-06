@@ -51,3 +51,4 @@ class TestSnaprateApp(AsyncHTTPTestCase):
             response = self.fetch('/auth/logout/')
             response = self.fetch('/stats/')
             response = self.fetch('/stats/?s=PIPELINE1')
+            response = self.fetch('/?s=PIPELINE1&id=2')
