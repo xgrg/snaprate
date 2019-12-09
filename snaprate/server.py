@@ -297,7 +297,7 @@ class MainHandler(BaseHandler):
 
             test_section = '''<a class="btn btn-secondary" id="nextbad" href="nextbad/">
                 Go to next predicted failed case</a>
-                <span class="btn btn-{color_test}" id="test">Automatic prediction</span>'''.format(color_test=color_test)\
+                <span class="btn btn-{color_test}" id="test">Automatic prediction</span><br>'''.format(color_test=color_test)\
                 + test_section
         else:
             test_section = ''
