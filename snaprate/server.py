@@ -233,12 +233,12 @@ class MainHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         pipelines = list(self.snapshots.keys())
-        wd = self.get_argument('s', pipelines[0])
+        wd = self.get_argument('s', None)
         folders = [op.basename(e) for e in glob(op.join(self.wd, '*')) \
             if op.isdir(e)]
-        if not wd in folders:
+        if wd is None or not wd in folders:
             self.clear()
-            self.redirect('/')
+            self.redirect('/auth/logout/')
             return
 
         log.info('Snapshot type: %s'%wd)
@@ -275,20 +275,20 @@ class MainHandler(BaseHandler):
             test = self.tests[wd].loc[self.subjects[wd][id-1]][tn]
             c = [self.tests[wd].loc[self.subjects[wd][id-1]][each] \
                 for each in test_names]
-            test_unit = '<span href="#" data-toggle="tooltip" class="badge badge-light" id="test%s">%s%s</span>'
+            test_unit = '<span href="#" data-toggle="tooltip" class="badge badge-light" id="test%s">%s</span>&nbsp;'
             test_section = ''
             for i, (test_key, test_value) in enumerate(zip(test_names, c)):
                 if test_value == True:
                     tu = test_unit.replace('badge-light', 'badge-success')
-                    test_section += tu%(i, test_key, '')
+                    test_section += tu%(i, test_key)
                 elif test_value == False:
                     tu = test_unit.replace('badge-light', 'badge-danger')
-                    test_section += tu%(i, test_key, '')
+                    test_section += tu%(i, test_key)
                 else:
-                    if len(test_value) > 7:
-                        test_value = str(test_value)[:7] + '…'
-                    tu = test_unit%(i, test_key, ': %s'%test_value)
-                    tu = tu.replace(' id', 'title="%s" id'%test_value)
+                    if len(test_value) > 20:
+                        test_value = str(test_value)[:20] + '…'
+                    tu = test_unit%(i, test_value)
+                    tu = tu.replace(' id', 'title="%s: %s" id'%(test_key, test_value))
                     test_section += tu
 
 
@@ -348,6 +348,8 @@ class MainHandler(BaseHandler):
                         download</a>
                     <a class="btn btn-danger" id="logout" href="/auth/logout/">
                         logout</a>
+                    <a class="btn btn-primary" id="stats" href="/stats/?s={pipeline}">
+                        stats</a>
                 </div>
         '''
         print(value)
