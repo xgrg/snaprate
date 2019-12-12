@@ -286,8 +286,10 @@ class MainHandler(BaseHandler):
                     test_section += tu%(i, test_key)
                 else:
                     if len(test_value) > 20:
-                        test_value = str(test_value)[:20] + '…'
-                    tu = test_unit%(i, test_value)
+                        tu = test_unit%(i, str(test_value)[:20] + '…')
+                    else:
+                        tu = test_unit%(i, test_value) 
+
                     tu = tu.replace(' id', 'title="%s: %s" id'%(test_key, test_value))
                     test_section += tu
 
