@@ -1,8 +1,8 @@
-from tornado.testing import AsyncTestCase, AsyncHTTPTestCase
-import argparse
-from snaprate.server import main, create_parser, MainHandler, BaseHandler
 import mock
 from urllib.parse import urlencode
+from snaprate.server import Application
+from snaprate.handlers import MainHandler, BaseHandler
+from tornado.testing import AsyncHTTPTestCase
 
 
 class UserAPITest(AsyncHTTPTestCase):
@@ -13,6 +13,9 @@ class UserAPITest(AsyncHTTPTestCase):
 
 class TestSnaprateApp(AsyncHTTPTestCase):
     def get_app(self):
+        import sys
+        sys.path.append('./bin')
+        from run_server import create_parser, main
         parser = create_parser()
         args = parser.parse_args(['-d', 'web/tests', '--port', '8899'])
         server, t = main(args)
@@ -26,8 +29,8 @@ class TestSnaprateApp(AsyncHTTPTestCase):
             response = self.fetch('/spam')
             response = self.fetch('/', method='GET')
             data = {'username': 'guest',
-               'password': 'guest',
-               'resource':'PIPELINE1'}
+                    'password': 'guest',
+                    'resource': 'PIPELINE1'}
             response = self.fetch('/auth/login/', method='POST',
                 body=urlencode(data))
             response = self.fetch('/')
@@ -36,17 +39,17 @@ class TestSnaprateApp(AsyncHTTPTestCase):
 
             for each in ['next', 'prev', 'nextbad']:
                 data = {"score": 0,
-                   "comments": 'comment',
-                   "subject":1,
-                   "pipeline":'PIPELINE1',
-                   "then":each}
+                        "comments": 'comment',
+                        "subject": 1,
+                        "pipeline": 'PIPELINE1',
+                        "then": each}
                 response = self.fetch('/post/', method='POST',
-                    body=urlencode(data))
+                                      body=urlencode(data))
 
             response = self.fetch('/download/?s=PIPELINE1', method='GET')
             data = {"src": 'BBRC02_E07373'}
             response = self.fetch('/xnat/', method='POST',
-                body=urlencode(data))
+                                  body=urlencode(data))
 
             response = self.fetch('/auth/logout/')
             response = self.fetch('/stats/')
