@@ -7,7 +7,7 @@ install:
     - "pip install -r requirements.txt"
 
 script:
-    - "nosetests tests --nologcapture --with-coverage --cover-inclusive --cover-erase --cover-package ."
-    - "coverage report -m"
+    - "nosetests tests --nocapture --nologcapture --with-coverage --cover-erase --cover-inclusive --cover-erase --cover-package ."
+    - "coverage report -mi"
 after_success:
     - coveralls
