@@ -7,19 +7,20 @@ import tornado.web
 import pandas as pd
 from snaprate import settings
 from glob import glob
-import random
 import os.path as op
 import json
-from tornado.options import define, options
+from tornado.options import define
 import logging as log
 import argparse
 from datetime import datetime
+
 
 class My404Handler(tornado.web.RequestHandler):
     # Override prepare() instead of get() to cover all possible HTTP methods.
     def prepare(self):
         self.set_status(404)
         self.redirect('/')
+
 
 def _initialize(self, wd, subjects, scores, snapshots, tests):
     self.wd = wd
@@ -28,7 +29,9 @@ def _initialize(self, wd, subjects, scores, snapshots, tests):
     self.snapshots = snapshots
     self.tests = tests
 
+
 define("port", default=8890, help="run on the given port", type=int)
+
 
 class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
@@ -45,7 +48,7 @@ class AuthLoginHandler(BaseHandler):
     def get(self):
         try:
             errormessage = self.get_argument("error")
-        except:
+        except Exception:
             errormessage = ""
         types = ''
 
@@ -55,21 +58,22 @@ class AuthLoginHandler(BaseHandler):
                 <i>Guest account activated (guest/guest)</i></span>'''
             errormessage = errormessage + '<br>' + msg
 
-
-        folders = [op.basename(e) for e in glob(op.join(self.wd, '*')) if op.isdir(e)]
+        folders = [op.basename(e) for e in glob(op.join(self.wd, '*'))
+                   if op.isdir(e)]
         snapshots_types = folders
         for each in snapshots_types:
-            types = types + '<li><a href="#" resource="%s">%s</a></li>'%(each, each)
-        self.render("html/login.html", errormessage = errormessage, types=types)
+            types = types + '<li><a href="#" resource="%s">%s</a></li>'\
+                    % (each, each)
+        self.render("html/login.html", errormessage=errormessage, types=types)
 
     def check_permission(self, password, username):
         fp = op.join(self.wd, 'users.json')
         if not op.isfile(fp):
-            log.error('File not found (%s). Using default user: guest'%fp)
+            log.error('File not found (%s). Using default user: guest' % fp)
             users = ['guest']
         else:
             users = json.load(open(fp))
-        log.info('Known users: %s'%users)
+        log.info('Known users: %s' % users)
 
         for each in users:
             if username == each and password == each:
@@ -84,9 +88,10 @@ class AuthLoginHandler(BaseHandler):
         auth = self.check_permission(password, username)
         if auth:
             self.set_current_user(username)
-            self.redirect(u"/?s=%s"%resource)
+            self.redirect(u"/?s=%s" % resource)
         else:
-            error_msg = u"?error=" + tornado.escape.url_escape("Wrong login/password.")
+            error_msg = u"?error=" + \
+                        tornado.escape.url_escape("Wrong login/password.")
             self.redirect(u"/auth/login/" + error_msg)
 
     def set_current_user(self, user):
@@ -97,6 +102,7 @@ class AuthLoginHandler(BaseHandler):
 
     def initialize(self, wd):
         self.wd = wd
+
 
 class DownloadHandler(BaseHandler):
     @tornado.web.authenticated
@@ -288,7 +294,7 @@ class MainHandler(BaseHandler):
                     if len(test_value) > 20:
                         tu = test_unit%(i, str(test_value)[:20] + '…')
                     else:
-                        tu = test_unit%(i, test_value) 
+                        tu = test_unit%(i, test_value)
 
                     tu = tu.replace(' id', 'title="%s: %s" id'%(test_key, test_value))
                     test_section += tu
@@ -526,6 +532,7 @@ def collect_tests(wd):
                 %(f, len(tests[f]), len(tests[f].columns)))
     return tests
 
+
 def collect_snapshots(wd, subjects):
     folders = [op.basename(e) for e in glob(op.join(wd, '*')) if op.isdir(e)]
     snapshots = {}
@@ -533,20 +540,29 @@ def collect_snapshots(wd, subjects):
     for f in folders:
         sd = op.join(wd, f, 'snapshots')
         if not op.isdir(sd):
-            msg = 'Snapshot directory not found (%s)'%sd
+            msg = 'Snapshot directory not found (%s)' % sd
             raise Exception(msg)
         else:
             snapshots[f] = {}
             for s in subjects[f]:
-                fp = op.join(sd, '%s.jpg'%s)
-                if not op.isfile(fp):
-                    raise Exception('Snapshot not found %s'%fp)
+                jpg = op.join(sd, '%s.jpg' % s)
+                png = op.join(sd, '%s.png' % s)
+                if not op.isfile(jpg) and not op.isfile(png):
+                    raise Exception('Snapshot not found %s' % fp)
+                elif op.isfile(jpg) and op.isfile(png):
+                    raise Exception('Snapshot shoud be unique %s' % fp)
+                elif op.isfile(jpg):
+                    fp = jpg
+                else:
+                    fp = png
+
                 snapshots[f][s] = '.' + op.abspath(fp)[len(op.dirname(wd)):]
 
-        log.info('[%s] %s snapshots found'\
-            %(f, len(snapshots[f])))
+        log.info('[%s] %s snapshots found'
+                 % (f, len(snapshots[f])))
 
     return snapshots
+
 
 def collect_subjects(wd):
     folders = [op.basename(e) for e in glob(op.join(wd, '*')) if op.isdir(e)]
@@ -555,15 +571,15 @@ def collect_subjects(wd):
     for f in folders:
         fp = op.join(wd, f, 'subjects.json')
         if not op.isfile(fp):
-            msg = 'File not found (%s). Using default list based on snapshots'%fp
+            msg = 'File not found (%s). Using default list based on snapshots' % fp
             log.warning(msg)
             l = [op.basename(e).split('.')[0] \
-                for e in glob(op.join(wd, f, 'snapshots', '*.jpg'))]
+                for e in glob(op.join(wd, f, 'snapshots', '*.???'))]
             subjects[f] = sorted(l)
         else:
             subjects[f] = json.load(open(fp))
 
-        log.info('[%s] %s subjects found'%(f, len(subjects[f])))
+        log.info('[%s] %s subjects found' % (f, len(subjects[f])))
     return subjects
 
 
