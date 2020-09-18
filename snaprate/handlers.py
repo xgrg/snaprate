@@ -200,7 +200,7 @@ class PostHandler(BaseHandler):
             subject = find_next_bad(subject, self.tests[wd], self.subjects[wd])
 
         log.info('User %s has given following scores: %s'
-            %(username, self.scores[wd][username]))
+                 % (username, self.scores[wd][username]))
 
         current_subject = self.subjects[wd][subject - 1]
 
@@ -236,7 +236,7 @@ class MainHandler(BaseHandler):
         wd = self.get_argument('s', None)
         folders = [op.basename(e) for e in glob(op.join(self.wd, '*'))
                    if op.isdir(e)]
-        if wd is None or not wd in folders:
+        if wd is None or wd not in folders:
             self.clear()
             self.redirect('/auth/logout/')
             return
