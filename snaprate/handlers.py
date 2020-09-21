@@ -307,13 +307,16 @@ class MainHandler(BaseHandler):
                 </div>'''
 
         images_code = 'images = ['
+        
+        import random, string
 
-        for i, s in enumerate(self.subjects[wd]):
+        for s in self.subjects[wd]:
             img = self.snapshots[wd][s]
-            img_code = '{small: "%s", big: "%s"},' % (self.static_url(img),
-                                                      self.static_url(img))
-
+            x = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+            url = '/static/%s?v=%s' % (img, x)  # self.static_url(img)
+            img_code = '{small: "%s", big: "%s"},' % (url, url)
             images_code = images_code + img_code
+
         images_code = images_code + '];'
         images_code = images_code + '''wrapper = $("div #image-gallery");
                 viewer = new ImageViewer($(".image-container")[0]);
