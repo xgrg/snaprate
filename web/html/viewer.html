@@ -1,0 +1,35 @@
+<div class="container">
+  <div id="image-gallery">
+    <div class="image-container"></div>
+  </div>
+</div>
+<div class="container">
+    <button class="btn btn-info">
+        subject #
+        <span class="badge badge-light" id="subject_number">{id}</span>
+        /<span class="badge badge-light">{n_subjects}</span>
+    </button>
+    <a class="btn btn-info" id="xnat">Go to XNAT</a>
+
+    {test_section}
+
+    <span class="badge badge-secondary" id="username">{username}</span>
+    <span class="success" style="display:none">SAVED</span>
+    <span class="skipped" style="display:none">SKIPPED</span>
+</div>
+<div class="container">
+    <a class="btn btn-{color_btn}" id="score">Your score</a>
+    <input class="form-control" placeholder="Your comment" type="text" name="lname" value="{comment}">
+</div>
+<div class="container">
+    <a class="btn btn-primary" id="prevsubj" href="">
+        previous subject</a>
+    <a class="btn btn-primary" id="nextsubj" href="">
+        next subject</a>
+    <a class="btn btn-info" id="download" href="download/?s={pipeline}">
+        download</a>
+    <a class="btn btn-danger" id="logout" href="/auth/logout/">
+        logout</a>
+    <a class="btn btn-primary" id="stats" href="/stats/?s={pipeline}">
+        stats</a>
+</div>
