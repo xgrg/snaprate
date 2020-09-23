@@ -101,6 +101,33 @@ class HTMLFactory():
             test_section = ''
         return test_section
 
+    def other_pipelines(self, subject, pipeline, subjects):
+        #current_subject = subjects[pipeline][subject - 1]
+        print(subject, pipeline)
+        pipelines = {}
+        for p, subj in subjects.items():
+            if p == pipeline:
+                continue
+            if subject in subj:
+                pipelines[p] = subj.index(subject) + 1
+        print(pipelines)
+
+        types = ''
+        for p, subject_id in pipelines.items():
+            types += '<a class="dropdown-item" href="#">%s %s</a>' % (p, subject_id)
+
+        if len(pipelines.items()) != 0:
+            html = """<span class="dropdown"><button class="btn btn-info dropdown-toggle" type="button"
+                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Pipelines
+                        </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    {types}
+                    </div>
+                    </span>"""
+            return html.format(types=types)
+        return ''
+
     def rate_code(self, subject, n_subjects, username, pipeline):
 
         color_btn = {-1: 'danger',
@@ -114,13 +141,17 @@ class HTMLFactory():
         score, comment = self.lookup_scores(pipeline, subject, username)
         test_section = self.lookup_tests(self.tests[pipeline], subject)
 
+        pipelines = self.other_pipelines(subject, pipeline, self.subjects)
+        print(pipelines)
+
         html = html.format(id=id,
                            n_subjects=n_subjects,
                            test_section=test_section,
                            pipeline=pipeline,
                            username=username,
                            color_btn=color_btn[score],
-                           comment=comment)
+                           comment=comment,
+                           pipelines=pipelines)
         return html
 
     def images_code(self, subjects, snapshots):

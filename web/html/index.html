@@ -232,35 +232,35 @@
                 }
                 color_button(data[0]);
                 $('input').val(data[1]);
-                $('#username').text(data[2]);
+                //$('#username').text(data[2]);
                 if (then == 'nextbad'){
                   visible_class = 'subject' + visible_subject;
-                  visible_subject = parseInt(data[3]);
+                  visible_subject = parseInt(data[2]);
                   showImage()
                 }
-                if (data.length > 4){
-                  color_test(data[4]);
-                  for (i = 0 ; i < data[5].length ; i++){
+                if (data.length > 3){
+                  color_test(data[3]);
+                  for (i = 0 ; i < data[4].length ; i++){
                     $('#test'+i).removeClass("badge-light")
                     $('#test'+i).removeClass("badge-success")
                     $('#test'+i).removeClass("badge-danger")
-                    if (data[5][i][1] == 'True'){
-                      $('#test'+i).text(data[5][i][0]) //+': ' + data[5][i][1])
+                    if (data[4][i][1] == 'True'){
+                      $('#test'+i).text(data[4][i][0]) //+': ' + data[5][i][1])
                       $('#test'+i).addClass("badge-success")
                     }
-                    else if (data[5][i][1] == 'False'){
-                      $('#test'+i).text(data[5][i][0]) //+': ' + data[5][i][1])
+                    else if (data[4][i][1] == 'False'){
+                      $('#test'+i).text(data[4][i][0]) //+': ' + data[5][i][1])
                       $('#test'+i).addClass("badge-danger")
                     }
                     else {
-                      s = data[5][i][1];
+                      s = data[4][i][1];
                       if (s.length > 20) {
                         s = s.substring(0, 20) + "…";
                       }
 
                       $('#test'+i).text(s)
                       $('#test'+i).addClass("badge-light")
-                      title =  data[5][i][0] + ': '+  data[5][i][1]
+                      title =  data[4][i][0] + ': '+  data[4][i][1]
                       $('#test'+i).attr('title', title)
                       $('#test'+i).attr('data-original-title', title)
                     }
