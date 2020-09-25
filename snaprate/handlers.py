@@ -4,9 +4,7 @@ import json
 import os.path as op
 from glob import glob
 import logging as log
-from snaprate.utils import ScoreManager
-from snaprate.utils import HTMLFactory
-from snaprate.utils import find_next_bad
+from snaprate import utils
 
 
 class My404Handler(tornado.web.RequestHandler):
@@ -130,7 +128,7 @@ class DownloadHandler(BaseHandler):
         self.wd = wd
 
 
-class PostHandler(BaseHandler, ScoreManager):
+class PostHandler(BaseHandler, utils.ScoreManager):
 
     @tornado.web.authenticated
     def post(self):
@@ -139,6 +137,10 @@ class PostHandler(BaseHandler, ScoreManager):
         log.info('Snapshot type: %s' % pipeline)
         username = str(self.current_user[1:-1], 'utf-8')
         n_subjects = len(self.snapshots[pipeline].keys())
+        if pipeline not in self.scores.keys():
+            print('Missing pipeline. Rerun server.')
+            self.write('"UPDATE"')
+            return
 
         log.info(self.scores[pipeline])
         log.info('User %s has given following scores: %s'
@@ -178,10 +180,11 @@ class PostHandler(BaseHandler, ScoreManager):
         log.info('User %s has given following scores: %s'
                  % (username, self.scores[pipeline][username]))
 
-        score, comments, res = self.next(subject=subject,
-                                         subjects=self.subjects[pipeline],
-                                         tests=self.tests[pipeline],
-                                         scores=self.scores[pipeline][username])
+        res = self.next(subject=subject,
+                        subjects=self.subjects[pipeline],
+                        tests=self.tests[pipeline],
+                        scores=self.scores[pipeline][username])
+        score, comments = res[:2]
 
         log.info('Next subject: %s (%s) (%s)'
                  % (subject, score, comments))
@@ -191,31 +194,31 @@ class PostHandler(BaseHandler, ScoreManager):
         _initialize(self, **kwargs)
 
 
-from snaprate.utils import HTMLFactory
-class MainHandler(BaseHandler, HTMLFactory):
+class MainHandler(BaseHandler, utils.HTMLFactory):
 
     @tornado.web.authenticated
     def get(self):
 
         pipelines = list(self.snapshots.keys())
-        p = self.get_argument('s', None)  # get pipeline name
+        pipeline = self.get_argument('s', None)  # get pipeline name
         id = int(self.get_argument('id', 1))  # get subject index
         username = str(self.current_user[1:-1], 'utf-8')
 
         # Make sure passed pipeline is an existing folder
         folders = [op.basename(e) for e in glob(op.join(self.wd, '*'))
                    if op.isdir(e)]
-        if p is None or p not in folders:
+        if pipeline is None or pipeline not in folders:
             self.clear()
             self.redirect('/auth/logout/')
             return
 
-        log.info('Snapshot type: %s' % p)
+        log.info('Snapshot type: %s' % pipeline)
 
-        subject = self.subjects[p][id-1]  # first subject to be displayed
-        n_subjects = len(self.snapshots[p])
-        rate_code = self.rate_code(subject, n_subjects, username, p)
-        images_code = self.images_code(self.subjects[p], self.snapshots[p])
+        subject = self.subjects[pipeline][id-1]  # 1st subject to be displayed
+        n_subjects = len(self.snapshots[pipeline])
+        rate_code = self.rate_code(subject, n_subjects, username, pipeline)
+        images_code = self.images_code(self.subjects[pipeline],
+                                       self.snapshots[pipeline])
 
         args = {'danger': '',
                 'datasource': '',
@@ -226,8 +229,27 @@ class MainHandler(BaseHandler, HTMLFactory):
                 'images': images_code}
 
         log.info('User %s has given following scores: %s'
-                 % (username, self.scores[p][username]))
+                 % (username, self.scores[pipeline][username]))
         self.render("html/index.html", username=username, **args)
+
+    def initialize(self, **kwargs):
+        _initialize(self, **kwargs)
+
+
+class PipelineHandler(BaseHandler):
+
+    @tornado.web.authenticated
+    def post(self):
+
+        pipelines = list(self.snapshots.keys())
+        pipeline = self.get_argument('pipeline', None)  # get pipeline name
+        id = int(self.get_argument('id', 1))  # get subject index
+        username = str(self.current_user[1:-1], 'utf-8')
+        current_subject = self.subjects[pipeline][id - 1]
+        other_pipelines = utils.other_pipelines(current_subject,
+                                                pipeline,
+                                                self.subjects)
+        self.write(other_pipelines)
 
     def initialize(self, **kwargs):
         _initialize(self, **kwargs)
@@ -241,7 +263,7 @@ class StatsHandler(BaseHandler):
         pipelines = list(self.snapshots.keys())
         pipeline = self.get_argument('s', None)
 
-        fp = op.join(self.wd, 'users.json')
+        # fp = op.join(self.wd, 'users.json')
 
         if pipeline is None:
             html = ''

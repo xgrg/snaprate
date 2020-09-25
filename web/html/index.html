@@ -125,9 +125,35 @@
       else if ($("#score").hasClass('btn-success')) {
           return 0;
       }
-
     }
 
+
+    // Dropdown buttons: links to other pipelines
+    $("body").on('click', '.dropdown-menu button', function (e) {
+      e.preventDefault();
+      cls = $(this).attr('class');
+      if (cls == 'dropdown-item'){
+        if (validate() == true){
+           save_subject("");
+           pipeline = $(this).attr("pipeline");
+           subject =  $(this).attr("subject");
+
+           url = "?s=" + pipeline + "&id=" + subject;
+           console.log(pipeline + " " + subject + " " + url);
+           var win = window.open(url, '_blank');
+           if (win) {
+               win.focus();
+           } else {
+               alert('Please allow popups for this website');
+           }
+           return true;
+
+        }
+      }
+    });
+
+
+    // Managing buttons
     $("a").click(function(e){
       id = $(this).attr('id');
       e.preventDefault();
@@ -198,6 +224,7 @@
       return false;
     });
 
+
     $.urlParam = function(name){
         var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
         if (results==null){
@@ -209,10 +236,10 @@
     }
 
     function save_subject(then){
-      s = $.urlParam('s')
-      if (s==null){
-        s = ''
-      }
+      pipeline = $.urlParam('s')
+      //if (s==null){
+      //  s = ''
+      //}
 
       $.ajax({
             type: "POST",
@@ -220,10 +247,15 @@
             data: {"score": get_score(),
                    "comments": $('input').val(),
                    "subject":visible_subject,
-                   "pipeline":s,
+                   "pipeline":pipeline,
                    "then":then},
             dataType:'json',
             success: function(data) {
+                if (data == 'UPDATE'){
+                  alert('Missing data (probably after server reboot). Please logout and login again.');
+                  window.location.replace("/auth/logout/");
+                  return;
+                }
                 if ($('#score').hasClass('btn-secondary')){
                     $( "span.skipped" ).fadeIn( 150 ).delay( 100 ).fadeOut( 300 );
                 }
@@ -269,11 +301,26 @@
 
                   }
                 }
+
+                $.ajax({
+                      type: "POST",
+                      url: "/pipelines/",
+                      data: {"id": visible_subject,
+                             "pipeline": pipeline},
+                      dataType:'text',
+                      success: function(data) {
+                        $("#otherp").html(data);
+                        return;
+                      }
+
+                });
                 return data;
 
             }
         });
     }
+
+
     $('a#logout').unbind('click')
     $('a#stats').unbind('click')
     $('a#download').unbind('click')

@@ -18,9 +18,35 @@ def find_next_bad(subject, tests, subjects):
     return ns
 
 
+def other_pipelines(subject, pipeline, subjects):
+    # current_subject = subjects[pipeline][subject - 1]
+    pipelines = {}
+    for p, subj in subjects.items():
+        if p == pipeline:
+            continue
+        if subject in subj:
+            pipelines[p] = subj.index(subject) + 1
+
+    types = ''
+    for p, subject_id in pipelines.items():
+        types += '<button type="button" class="dropdown-item" pipeline="%s" subject="%s">%s %s</button>' % (p, subject_id, p, subject_id)
+
+    if len(pipelines.items()) != 0:
+        html = """<span id="otherp" class="dropdown"><button class="btn btn-info dropdown-toggle" type="button"
+                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Pipelines
+                    </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                {types}
+                </div>
+                </span>"""
+        return html.format(types=types)
+    return '<span id="otherp"></span>'
+
+
 class HTMLFactory():
 
-    def lookup_scores(self, pipeline, subject, username):
+    def read_scores(self, pipeline, subject, username):
         fp = 'scores_%s_%s.xls' % (pipeline, username)
         fn = op.join(self.wd, pipeline, 'ratings', fp)
         log.info('Reading %s...' % fn)
@@ -48,9 +74,7 @@ class HTMLFactory():
             score = int(score)
         return score, comment
 
-    def lookup_tests(self, tests, subject):
-        # Look up tests
-
+    def add_tests(self, tests, subject):
         tsp = """<a class="btn btn-secondary" id="nextbad" href="nextbad/">
                     Go to next predicted failed case
                  </a>
@@ -76,10 +100,10 @@ class HTMLFactory():
             for i, (test_key, test_value) in enumerate(zip(test_names, c)):
 
                 # Change test button background color
-                if test_value:
+                if test_value == True:
                     tu = test_unit.replace('badge-light', 'badge-success')
                     test_section += tu.format(id=i, mesg=test_key)
-                elif not test_value:
+                elif test_value == False:
                     tu = test_unit.replace('badge-light', 'badge-danger')
                     test_section += tu.format(id=i, mesg=test_key)
                 else:
@@ -101,33 +125,6 @@ class HTMLFactory():
             test_section = ''
         return test_section
 
-    def other_pipelines(self, subject, pipeline, subjects):
-        #current_subject = subjects[pipeline][subject - 1]
-        print(subject, pipeline)
-        pipelines = {}
-        for p, subj in subjects.items():
-            if p == pipeline:
-                continue
-            if subject in subj:
-                pipelines[p] = subj.index(subject) + 1
-        print(pipelines)
-
-        types = ''
-        for p, subject_id in pipelines.items():
-            types += '<a class="dropdown-item" href="#">%s %s</a>' % (p, subject_id)
-
-        if len(pipelines.items()) != 0:
-            html = """<span class="dropdown"><button class="btn btn-info dropdown-toggle" type="button"
-                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Pipelines
-                        </button>
-                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                    {types}
-                    </div>
-                    </span>"""
-            return html.format(types=types)
-        return ''
-
     def rate_code(self, subject, n_subjects, username, pipeline):
 
         color_btn = {-1: 'danger',
@@ -138,10 +135,10 @@ class HTMLFactory():
         fp = op.join(op.dirname(__file__), '..', 'web', 'html', 'viewer.html')
         html = open(fp).read()
 
-        score, comment = self.lookup_scores(pipeline, subject, username)
-        test_section = self.lookup_tests(self.tests[pipeline], subject)
+        score, comment = self.read_scores(pipeline, subject, username)
+        test_section = self.add_tests(self.tests[pipeline], subject)
 
-        pipelines = self.other_pipelines(subject, pipeline, self.subjects)
+        pipelines = other_pipelines(subject, pipeline, self.subjects)
         print(pipelines)
 
         html = html.format(id=id,
@@ -224,4 +221,4 @@ class ScoreManager():
             res.append(test)
             res.append([(i, j) for i, j in zip(test_names, c)])
             print(res)
-        return score, comments, res
+        return res

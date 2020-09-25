@@ -10,7 +10,7 @@ import logging as log
 from .collect import collect_tests, collect_subjects, collect_snapshots
 from .handlers import (MainHandler, AuthLoginHandler, AuthLogoutHandler,
                        PostHandler, StatsHandler, XNATHandler, DownloadHandler,
-                       My404Handler)
+                       My404Handler, PipelineHandler)
 
 
 class Application(tornado.web.Application):
@@ -34,6 +34,7 @@ class Application(tornado.web.Application):
             (r"/auth/login/", AuthLoginHandler, dict(wd=wd)),
             (r"/auth/logout/", AuthLogoutHandler),
             (r"/post/", PostHandler, params),
+            (r"/pipelines/", PipelineHandler, params),
             (r"/stats/", StatsHandler, params),
             (r"/xnat/", XNATHandler, params),
             (r"/download/", DownloadHandler, dict(wd=wd))]
