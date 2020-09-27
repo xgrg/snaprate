@@ -132,7 +132,6 @@ class PostHandler(BaseHandler, utils.ScoreManager):
 
     @tornado.web.authenticated
     def post(self):
-
         pipeline = self.get_argument('pipeline', None)
         log.info('Snapshot type: %s' % pipeline)
         username = str(self.current_user[1:-1], 'utf-8')
@@ -173,7 +172,7 @@ class PostHandler(BaseHandler, utils.ScoreManager):
         elif then == 'prev':
             subject = subject - 1 if subject > 1 else n_subjects
         elif then == 'nextbad':
-            subject = find_next_bad(subject,
+            subject = utils.find_next_bad(subject,
                                     self.tests[pipeline],
                                     self.subjects[pipeline])
 
