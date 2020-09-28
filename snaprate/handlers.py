@@ -53,7 +53,7 @@ class AuthLoginHandler(BaseHandler):
         folders = [op.basename(e) for e in glob(op.join(self.wd, '*'))
                    if op.isdir(e)]
         snapshots_types = folders
-        for each in snapshots_types:
+        for each in sorted(snapshots_types):
             types = types + '<li><a href="#" resource="%s">%s</a></li>'\
                     % (each, each)
         self.render("html/login.html", errormessage=errormessage, types=types)
