@@ -1084,7 +1084,16 @@
     }, {
       key: "_loadImages",
       value: function _loadImages() {
+
         var _this9 = this;
+
+        var snapHandle = this._elements.snapHandle.style.cssText;
+        var zoomHandle = this._elements.zoomHandle.style.cssText;
+        var imageHandle = undefined;
+        if (this._elements.image != undefined){
+          imageHandle = this._elements.image.style.cssText;
+        }
+        const previousZoomValue = Object.assign({}, this._state);
 
         var _images = this._images,
             _elements = this._elements;
@@ -1144,8 +1153,16 @@
 
           _this9._calculateDimensions(); // reset the zoom
 
-
-          _this9.resetZoom();
+          if (snapHandle && zoomHandle && imageHandle && previousZoomValue) {
+              viewer._elements.snapHandle.style.cssText = snapHandle;
+              viewer._elements.zoomHandle.style.cssText = zoomHandle;
+              viewer._elements.image.style.cssText = imageHandle;
+              viewer._state.zoomValue = previousZoomValue.zoomValue;
+              var showZoomImage = true;
+          }
+          else{
+            _this9.resetZoom();
+          }
         };
 
         if (imageLoaded(image)) {
