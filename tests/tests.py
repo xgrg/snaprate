@@ -55,3 +55,6 @@ class TestSnaprateApp(AsyncHTTPTestCase):
             response = self.fetch('/stats/')
             response = self.fetch('/stats/?s=PIPELINE1')
             response = self.fetch('/?s=PIPELINE1&id=2')
+            data = {'pipeline': 'PIPELINE1', "id": 1}
+            response = self.fetch('/pipelines/', method='POST',
+                                  body=urlencode(data))
