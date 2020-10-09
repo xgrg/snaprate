@@ -29,7 +29,7 @@ def other_pipelines(subject, pipeline, subjects):
 
     types = ''
     for p, subject_id in pipelines.items():
-        types += '<button type="button" class="dropdown-item" pipeline="%s" subject="%s">%s %s</button>' % (p, subject_id, p, subject_id)
+        types += '<button type="button" class="dropdown-item" pipeline="%s" subject="%s">%s</button>' % (p, subject_id, p)
 
     if len(pipelines.items()) != 0:
         html = """<span id="otherp" class="dropdown"><button class="btn btn-info dropdown-toggle" type="button"
