@@ -297,7 +297,7 @@ class XNATHandler(BaseHandler):
         import os.path as op
         eid = op.basename(src).split('?')[0].split('.')[0]
 
-        url = 'https://barcelonabrainimaging.org/data/'\
+        url = 'https://xnat.barcelonabeta.org/data/'\
             'experiments/%s?format=html' % eid
         self.write('"%s"' % eid)
 
