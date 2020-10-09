@@ -12,7 +12,7 @@ def main(args):
 
 
 def create_parser():
-    parser = argparse.ArgumentParser(description='sample argument')
+    parser = argparse.ArgumentParser(description='Snaprate webapp server')
     parser.add_argument('-d', '--data', help='Path to the data/ folder',
                         required=False, default='web/data')
     parser.add_argument('--port', required=False, default=8890)
