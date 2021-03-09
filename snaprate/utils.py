@@ -76,7 +76,7 @@ class HTMLFactory():
 
     def add_tests(self, tests, subject):
         tsp = """<a class="btn btn-secondary" id="nextbad" href="nextbad/">
-                    Go to next predicted failed case
+                    Go to next red case
                  </a>
                  <span class="btn btn-{color_test}" id="test">
                  Automatic prediction
