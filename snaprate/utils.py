@@ -108,7 +108,7 @@ class HTMLFactory():
                     test_section += tu.format(id=i, mesg=test_key)
                 else:
                     # Trim message if too long
-                    if len(test_value) > 20:
+                    if len(str(test_value)) > 20:
                         tu = test_unit.format(id=i,
                                               mesg=str(test_value)[:20] + '…')
                     else:
