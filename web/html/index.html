@@ -104,11 +104,11 @@
             e.preventDefault();
             cycle_button();
         }
-        else if (e.which == 39){
+        else if (e.which == 39 && !$("input.form-control").is(':focus')){
             e.preventDefault();
             onclick_next();
         }
-        else if (e.which == 37){
+        else if (e.which == 37 && !$("input.form-control").is(':focus')){
             e.preventDefault();
             onclick_prev();
         }
