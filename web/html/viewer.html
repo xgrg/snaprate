@@ -1,17 +1,10 @@
-<div class="container">
-  <div id="image-gallery">
-    <div class="image-container"></div>
-  </div>
-</div>
+
 <div class="container">
     <button class="btn btn-info">
         subject #
         <span class="badge badge-light" id="subject_number">{id}</span>
         /<span class="badge badge-light">{n_subjects}</span>
     </button>
-    {pipelines}
-    <a class="btn btn-info" id="xnat">Go to XNAT</a>
-
     {test_section}
 
     <span class="badge badge-secondary" id="username">{username}</span>
@@ -27,10 +20,10 @@
         previous subject</a>
     <a class="btn btn-primary" id="nextsubj" href="">
         next subject</a>
-    <a class="btn btn-info" id="download" href="download/?s={pipeline}">
-        download</a>
+    <!-- <a class="btn btn-info" id="download" href="/download/">
+        download</a> -->
     <a class="btn btn-danger" id="logout" href="/auth/logout/">
         logout</a>
-    <a class="btn btn-primary" id="stats" href="/stats/?s={pipeline}">
-        stats</a>
+    <!--<a class="btn btn-primary" id="stats" href="/stats/">
+        stats</a>-->
 </div>

@@ -11,11 +11,11 @@ $.urlParam = function(name){
 }
 
 function showImage() {
-          visible_class = 'subject' + visible_subject;
-          imgObj = images[visible_subject - 1];
-          viewer.load(imgObj.small, imgObj.big);
-          $("span#subject_number").text(visible_subject);
-          $("span#image_number").text(visible_image);
+          //visible_class = 'subject' + index;
+          //imgObj = images[index - 1];
+          //viewer.load(imgObj.small, imgObj.big);
+          $("span#subject_number").text(index);
+          $("span#image_number").text(index);
         }
 
 function validate(){
@@ -104,84 +104,37 @@ function get_score(){
 }
 
 function save_subject(then){
-  pipeline = $.urlParam('s')
+  //pipeline = $.urlParam('s')
   //if (s==null){
   //  s = ''
   //}
 
+  console.log(['polygons',polygons])
   $.ajax({
         type: "POST",
         url: "/post/",
         data: {"score": get_score(),
                "comments": $('input').val(),
-               "subject":visible_subject,
-               "pipeline":pipeline,
+               "polygons": JSON.stringify(polygons),
+               "subject":index,
                "then":then},
         dataType:'json',
         success: function(data) {
-            if (data == 'UPDATE'){
-              alert('Missing data (probably after server reboot). Please logout and login again.');
-              window.location.replace("/auth/logout/");
-              return;
-            }
-            if ($('#score').hasClass('btn-secondary')){
-                $( "span.skipped" ).fadeIn( 150 ).delay( 100 ).fadeOut( 300 );
-            }
-            else {
-              $( "span.success" ).fadeIn( 150 ).delay( 100 ).fadeOut( 300 );
-            }
-            color_button(data[0]);
-            $('input').val(data[1]);
-            //$('#username').text(data[2]);
-            if (then == 'nextbad'){
-              visible_class = 'subject' + visible_subject;
-              visible_subject = parseInt(data[2]);
-              showImage()
-            }
-            if (data.length > 3){
-              color_test(data[3]);
-              for (i = 0 ; i < data[4].length ; i++){
-                $('#test'+i).removeClass("badge-light")
-                $('#test'+i).removeClass("badge-success")
-                $('#test'+i).removeClass("badge-danger")
-                if (data[4][i][1] == 'True'){
-                  $('#test'+i).text(data[4][i][0]) //+': ' + data[5][i][1])
-                  $('#test'+i).addClass("badge-success")
-                }
-                else if (data[4][i][1] == 'False'){
-                  $('#test'+i).text(data[4][i][0]) //+': ' + data[5][i][1])
-                  $('#test'+i).addClass("badge-danger")
-                }
-                else {
-                  s = data[4][i][1];
-                  if (s.length > 20) {
-                    s = s.substring(0, 20) + "…";
-                  }
+            console.log(data)
+            id = data[0];
+            fp = data[1];
+            points = [];
+            d3.selectAll('g').remove();
+            d3.select('image').attr("xlink:href", fp);
+            polygons = data[2]
 
-                  $('#test'+i).text(s)
-                  $('#test'+i).addClass("badge-light")
-                  title =  data[4][i][0] + ': '+  data[4][i][1]
-                  $('#test'+i).attr('title', title)
-                  $('#test'+i).attr('data-original-title', title)
-                }
-                $('#test'+i).tooltip();
-                $('[data-toggle="tooltip"]').tooltip();
+            $('input').val(data[3]);
+            color_button(data[4]);
 
-              }
-            }
+            howmany_polygons = 0; //data[2].length;
+            console.log(['poly:', howmany_polygons, polygons])
+            drawPoly(polygons);
 
-            $.ajax({
-                  type: "POST",
-                  url: "/pipelines/",
-                  data: {"id": visible_subject,
-                         "pipeline": pipeline},
-                  dataType:'text',
-                  success: function(data) {
-                    $("#otherp").html(data);
-                    return;
-                  }
-
-            });
             return data;
 
         }

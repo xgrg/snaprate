@@ -23,36 +23,14 @@ def collect_tests(wd):
     return tests
 
 
-def collect_snapshots(wd, subjects):
-    folders = [op.basename(e) for e in glob(op.join(wd, '*')) if op.isdir(e)]
-    snapshots = {}
-    log.info('=== Summary of snapshots ===')
-    for f in folders:
-        sd = op.join(wd, f, 'snapshots')
-        if not op.isdir(sd):
-            msg = 'Snapshot directory not found (%s)' % sd
-            raise Exception(msg)
-        else:
-            snapshots[f] = {}
-            for s in subjects[f]:
-                jpg = op.join(sd, '%s.jpg' % s)
-                png = op.join(sd, '%s.png' % s)
-                if not op.isfile(jpg) and not op.isfile(png):
-                    raise Exception('Snapshot not found %s/%s' % (jpg, png))
-                elif op.isfile(jpg) and op.isfile(png):
-                    raise Exception('Snapshot shoud be unique %s/%s'
-                                    % (jpg, png))
-                elif op.isfile(jpg):
-                    fp = jpg
-                else:
-                    fp = png
+def collect_h5(wd): #, subjects):
+    from glob import glob
+    import os.path as op
+    h5 = glob(op.join(wd, '*.h5'))
 
-                snapshots[f][s] = '.' + op.abspath(fp)[len(op.dirname(wd)):]
+    log.info('%s h5 found' % len(h5))
 
-        log.info('[%s] %s snapshots found'
-                 % (f, len(snapshots[f])))
-
-    return snapshots
+    return h5
 
 
 def collect_subjects(wd):

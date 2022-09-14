@@ -1,3 +1,13 @@
+svg {
+    border: 1px solid;
+}
+path{
+    fill: lightsalmon;
+    stroke: salmon;
+    stroke-width: 5px;
+}
+
+
 body, html {
     height: 100%;
     background-repeat: no-repeat;
@@ -130,4 +140,24 @@ i {
 .forgot-password:active,
 .forgot-password:focus{
     color: rgb(12, 97, 33);
+}
+
+#loading {
+  position: fixed;
+  display: block;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  text-align: center;
+  opacity: 0.7;
+  background-color: #fff;
+  z-index: 99;
+}
+
+#loading-image {
+  position: absolute;
+  top: 100px;
+  left: 240px;
+  z-index: 100;
 }

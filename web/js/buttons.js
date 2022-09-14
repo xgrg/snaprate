@@ -1,6 +1,6 @@
 function onclick_xnat(){
 
-  imgObj = images[visible_subject - 1];
+  imgObj = images[index - 1];
   src = imgObj.small;
   $.ajax({
         type: "POST",
@@ -30,15 +30,15 @@ function onclick_prev(){
   if (validate() == true){
     save_subject("prev");
 
-    visible_class = 'subject' + visible_subject;
-    if (visible_subject == 1) {
-      visible_subject = n_subjects;
+    //visible_class = 'subject' + index;
+    if (index == 0) {
+      index = n_subjects -1 ;
     }
     else {
-      visible_subject = visible_subject - 1;
+      index = index - 1;
     }
 
-    showImage() //visible_class, visible_subject, visible_image)
+    showImage() //visible_class, index, visible_image)
   }
 }
 
@@ -46,14 +46,14 @@ function onclick_next(){
   if (validate() == true){
     save_subject("next");
 
-    visible_class = 'subject' + visible_subject;
-    if (visible_subject == n_subjects) {
-      visible_subject = 1;
+    //visible_class = 'subject' + index;
+    if (index == n_subjects-1) {
+      index = 0;
     }
     else {
-      visible_subject = visible_subject + 1;
+      index = index + 1;
     }
 
-    showImage() ; //visible_class, visible_subject, visible_image)
+    showImage() ; //visible_class, index, visible_image)
   }
 }

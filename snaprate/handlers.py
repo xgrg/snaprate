@@ -7,6 +7,7 @@ import logging as log
 from snaprate import utils
 
 
+
 class My404Handler(tornado.web.RequestHandler):
     # Override prepare() instead of get() to cover all possible HTTP methods.
     def prepare(self):
@@ -14,12 +15,12 @@ class My404Handler(tornado.web.RequestHandler):
         self.redirect('/')
 
 
-def _initialize(self, wd, subjects, scores, snapshots, tests):
+def _initialize(self, wd, scores, h5):
     self.wd = wd
-    self.subjects = subjects
+    #self.subjects = subjects
     self.scores = scores
-    self.snapshots = snapshots
-    self.tests = tests
+    self.h5 = h5
+    #self.tests = tests
 
 
 define("port", default=8890, help="run on the given port", type=int)
@@ -50,13 +51,7 @@ class AuthLoginHandler(BaseHandler):
                 <i>Guest account activated (guest/guest)</i></span>'''
             errormessage = errormessage + '<br>' + msg
 
-        folders = [op.basename(e) for e in glob(op.join(self.wd, '*'))
-                   if op.isdir(e)]
-        snapshots_types = folders
-        for each in sorted(snapshots_types):
-            types = types + '<li><a href="#" resource="%s">%s</a></li>'\
-                    % (each, each)
-        self.render("html/login.html", errormessage=errormessage, types=types)
+        self.render("html/login.html", errormessage=errormessage)
 
     def check_permission(self, password, username):
         fp = op.join(self.wd, 'users.json')
@@ -75,12 +70,11 @@ class AuthLoginHandler(BaseHandler):
     def post(self):
         username = str(self.get_argument("username", ""))
         password = str(self.get_argument("password", ""))
-        resource = str(self.get_argument("resource", ""))
 
         auth = self.check_permission(password, username)
         if auth:
             self.set_current_user(username)
-            self.redirect(u"/?s=%s" % resource)
+            self.redirect(u"/")
         else:
             error_msg = u"?error=" + \
                         tornado.escape.url_escape("Wrong login/password.")
@@ -100,13 +94,11 @@ class DownloadHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         username = str(self.current_user[1:-1], 'utf-8')
-        pipeline = self.get_argument('s', None)
-        log.info('Snapshot type: %s' % pipeline)
 
         fn = op.join(self.wd,
-                     pipeline,
+
                      'ratings',
-                     'scores_%s_%s.xls' % (pipeline, username))
+                     'scores_%s.xls' %username)
         if not op.isfile(fn):
             self.write('<script>alert("Please review at least one subject '
                        'before downloading Excel table.")"</script>')
@@ -128,107 +120,98 @@ class DownloadHandler(BaseHandler):
         self.wd = wd
 
 
-class PostHandler(BaseHandler, utils.ScoreManager):
+class PostHandler(BaseHandler, utils.ScoreManager, utils.H5Manager):
+
 
     @tornado.web.authenticated
     def post(self):
-        pipeline = self.get_argument('pipeline', None)
-        log.info('Snapshot type: %s' % pipeline)
         username = str(self.current_user[1:-1], 'utf-8')
-        n_subjects = len(self.snapshots[pipeline].keys())
-        if pipeline not in self.scores.keys():
-            print('Missing pipeline. Rerun server.')
-            self.write('"UPDATE"')
-            return
+        n_subjects = len(self.h5)
 
-        log.info(self.scores[pipeline])
-        log.info('User %s has given following scores: %s'
-                 % (username, self.scores[pipeline][username]))
         # Parse passed data
+        polygons = json.loads(self.get_argument("polygons", None))
+
         score = self.get_argument("score", None)
         if score != '':
             score = int(score)
 
         comments = self.get_argument("comments", None)
-        subject = int(self.get_argument("subject", None))
+        id = int(self.get_argument("subject", None))
         then = self.get_argument("then", None)
 
-        log.info('%s (%s) was given %s (out of %s) (comments: %s)'
-                 % (subject, self.subjects[pipeline][subject - 1], score,
-                    n_subjects, comments))
+        print('*** %s is pushing score=%s (%s) with %s polygons'\
+            % (username, score, comments, len(polygons)))
+        print('h5:', self.h5[id])
+        print(self.scores)
 
-        fn = op.join(self.wd,
-                     pipeline,
-                     'ratings',
-                     'scores_%s_%s.xls' % (pipeline, username))
 
-        self.update(score, comments, subject,
-                    self.subjects[pipeline],
-                    self.scores[pipeline][username],
-                    fn)
+        self.scores[self.h5[id]] = [id, score, comments, polygons, username]
+
+        from snaprate import settings
+        import pandas as pd
+        fn = op.join(settings.STATIC_PATH, 'annotations.xlsx')
+        log.info('Writing %s...' % fn)
+        data = []
+        for k, v in self.scores.items():
+            row = [k]
+            row.extend(v[:-2])
+            row.append(json.dumps(v[-2]))
+            row.append(v[-1])
+            data.append(row)
+        columns = ['fp', 'id', 'score', 'comments', 'polygons', 'username']
+        df = pd.DataFrame(data, columns=columns).set_index('fp').sort_index()
+        df.to_excel(fn)
+
+        # self.update(score, comments, subject,
+        #             self.subjects[pipeline],
+        #             self.scores[pipeline][username],
+        #             fn)
 
         if then == 'next':
-            subject = subject + 1 if subject < n_subjects else 1
+            id = id + 1 if id < n_subjects - 1 else 0
         elif then == 'prev':
-            subject = subject - 1 if subject > 1 else n_subjects
-        elif then == 'nextbad':
-            subject = utils.find_next_bad(subject,
-                                    self.tests[pipeline],
-                                    self.subjects[pipeline])
+            id = id - 1 if id > 0 else n_subjects - 1
 
-        log.info('User %s has given following scores: %s'
-                 % (username, self.scores[pipeline][username]))
+        log.info('Next subject: %s (%s)'
+                 % (self.h5[id], id))
+        jf = self.process_h5(self.h5[id])
+        scores = self.scores.get(self.h5[id], [None, '', '', [], None])
 
-        res = self.next(subject=subject,
-                        subjects=self.subjects[pipeline],
-                        tests=self.tests[pipeline],
-                        scores=self.scores[pipeline][username])
-        score, comments = res[:2]
-
-        log.info('Next subject: %s (%s) (%s)'
-                 % (subject, score, comments))
-        self.write(json.dumps(res))
+        print('NEW ID', id, scores)
+        id, score, comment, polygons, username = scores
+        self.write(json.dumps([id, jf, polygons, comment, score]))
 
     def initialize(self, **kwargs):
         _initialize(self, **kwargs)
 
 
-class MainHandler(BaseHandler, utils.HTMLFactory):
+class MainHandler(BaseHandler, utils.HTMLFactory, utils.H5Manager):
 
     @tornado.web.authenticated
     def get(self):
-
-        pipelines = list(self.snapshots.keys())
-        pipeline = self.get_argument('s', None)  # get pipeline name
-        id = int(self.get_argument('id', 1))  # get subject index
+        id = int(self.get_argument('id', 0))  # get subject index
         username = str(self.current_user[1:-1], 'utf-8')
+        n_subjects = len(self.h5)
 
-        # Make sure passed pipeline is an existing folder
-        folders = [op.basename(e) for e in glob(op.join(self.wd, '*'))
-                   if op.isdir(e)]
-        if pipeline is None or pipeline not in folders:
-            self.clear()
-            self.redirect('/auth/logout/')
-            return
-
-        log.info('Snapshot type: %s' % pipeline)
-
-        subject = self.subjects[pipeline][id-1]  # 1st subject to be displayed
-        n_subjects = len(self.snapshots[pipeline])
-        rate_code = self.rate_code(subject, n_subjects, username, pipeline)
-        images_code = self.images_code(self.subjects[pipeline],
-                                       self.snapshots[pipeline])
+        rate_code = self.rate_code(id, n_subjects, username)
+        jf = self.process_h5(self.h5[id])
+        scores = self.scores.get(self.h5[id], None)
+        polygons = []
+        if scores is not None:
+            polygons = scores[-2]
 
         args = {'danger': '',
                 'datasource': '',
                 'database': '/tmp',
                 'rate_subjects': rate_code,
-                'n_subjects': n_subjects,
-                'visible_subject': id,
-                'images': images_code}
+                'n_subjects': len(self.h5),
+                'index': id,
+                'polygons': json.dumps(polygons),
+                'images': '',
+                'jf': jf}
 
         log.info('User %s has given following scores: %s'
-                 % (username, self.scores[pipeline][username]))
+                 % (username, scores))
         self.render("html/index.html", username=username, **args)
 
     def initialize(self, **kwargs):
