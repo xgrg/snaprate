@@ -12,16 +12,18 @@ class HTMLFactory():
 
     def rate_code(self, subject, n_subjects, username):
 
-        color_btn = {'-1': 'danger',
+        color_btn = {-1: 'danger',
                      '': 'secondary',
-                     '1': 'warning',
-                     '0': 'success'}
+                     1: 'warning',
+                     0: 'success'}
 
         fp = op.join(op.dirname(__file__), '..', 'web', 'html', 'viewer.html')
         html = open(fp).read()
 
         scores = self.scores.get(self.h5[subject], [None, '', '', [], None]) # self.read_scores(pipeline, subject, username)
         id, score, comment, polygons, username = scores
+        if score not in [None, '']:
+            score = int(score)
         test_section = '' # self.add_tests(self.tests[pipeline], subject)
 
         # pipelines = other_pipelines(subject, pipeline, self.subjects)
