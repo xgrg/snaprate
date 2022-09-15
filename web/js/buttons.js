@@ -13,6 +13,11 @@ function onclick_prev() {
 
 function onclick_next() {
   if (validate() == true) {
+    $('#nextcase').addClass("disabled");
+    $('#prevcase').addClass("disabled");
+
+
+
     save_subject("next");
     if (index == n_cases - 1) {
       index = 0;

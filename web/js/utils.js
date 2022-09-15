@@ -111,6 +111,9 @@ function save_subject(then) {
       howmany_polygons = 0;
       drawPoly(polygons);
 
+      $('#nextcase').removeClass("disabled");
+      $('#prevcase').removeClass("disabled");
+
       return data;
 
     }
