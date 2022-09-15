@@ -7,11 +7,18 @@ import tornado.web
 from snaprate import settings
 import os.path as op
 import logging as log
-from .collect import collect_tests, collect_subjects, collect_h5
 from .handlers import (MainHandler, AuthLoginHandler, AuthLogoutHandler,
-                       PostHandler, StatsHandler, XNATHandler, DownloadHandler,
-                       My404Handler, PipelineHandler)
+                       PostHandler, DownloadHandler,
+                       My404Handler)
 
+def collect_hdf5(wd): #, subjects):
+    from glob import glob
+    import os.path as op
+    h5 = sorted(glob(op.join(wd, '*.h5')))
+
+    log.info('%s h5 found' % len(h5))
+
+    return h5
 
 class Application(tornado.web.Application):
     def __init__(self, args):
@@ -29,7 +36,6 @@ class Application(tornado.web.Application):
                     r.append(aux)
                 r2 = r[:-2]
                 r2.append(json.loads(r[-2]))
-                print('poly', r2[-1])
                 r2.append(r[-1])
 
                 self.scores[i] = r2
@@ -38,14 +44,10 @@ class Application(tornado.web.Application):
         wd = op.abspath(args.data)
         log.info('Data directory: %s' % wd)
 
-        # self.subjects = collect_subjects(wd)
-        # self.tests = collect_tests(wd)
-        self.h5 = collect_h5(wd) #, self.subjects)
+        self.h5 = collect_hdf5(wd)
 
-        params = {#'subjects': self.subjects,
-                  'h5': self.h5,
+        params = {'h5': self.h5,
                   'scores': self.scores,
-                  #'tests': self.tests,
                   'wd': wd}
 
         handlers = [
@@ -53,9 +55,6 @@ class Application(tornado.web.Application):
             (r"/auth/login/", AuthLoginHandler, dict(wd=wd)),
             (r"/auth/logout/", AuthLogoutHandler),
             (r"/post/", PostHandler, params),
-            (r"/pipelines/", PipelineHandler, params),
-            (r"/stats/", StatsHandler, params),
-            (r"/xnat/", XNATHandler, params),
             (r"/download/", DownloadHandler, dict(wd=wd))]
 
         s = {

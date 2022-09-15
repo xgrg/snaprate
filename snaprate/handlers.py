@@ -17,10 +17,8 @@ class My404Handler(tornado.web.RequestHandler):
 
 def _initialize(self, wd, scores, h5):
     self.wd = wd
-    #self.subjects = subjects
     self.scores = scores
     self.h5 = h5
-    #self.tests = tests
 
 
 define("port", default=8890, help="run on the given port", type=int)
@@ -93,12 +91,9 @@ class AuthLoginHandler(BaseHandler):
 class DownloadHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
+        from snaprate import settings
         username = str(self.current_user[1:-1], 'utf-8')
-
-        fn = op.join(self.wd,
-
-                     'ratings',
-                     'scores_%s.xls' %username)
+        fn = op.join(settings.STATIC_PATH, 'annotations.xlsx')
         if not op.isfile(fn):
             self.write('<script>alert("Please review at least one subject '
                        'before downloading Excel table.")"</script>')
@@ -120,169 +115,84 @@ class DownloadHandler(BaseHandler):
         self.wd = wd
 
 
-class PostHandler(BaseHandler, utils.ScoreManager, utils.H5Manager):
-
+class PostHandler(BaseHandler, utils.ScoreManager, utils.SnapshotMaker):
 
     @tornado.web.authenticated
     def post(self):
+
         username = str(self.current_user[1:-1], 'utf-8')
-        n_subjects = len(self.h5)
+        n_cases = len(self.h5)
 
         # Parse passed data
         polygons = json.loads(self.get_argument("polygons", None))
-
+        comments = self.get_argument("comments", None)
+        index = int(self.get_argument("index", None))
+        then = self.get_argument("then", None)
         score = self.get_argument("score", None)
         if score != '':
             score = int(score)
 
-        comments = self.get_argument("comments", None)
-        id = int(self.get_argument("subject", None))
-        then = self.get_argument("then", None)
-
         print('*** %s is pushing score=%s (%s) with %s polygons'\
             % (username, score, comments, len(polygons)))
-        print('h5:', self.h5[id])
+
+        fp = self.h5[index]
+        print('Previous image (%s): %s' % (index, fp))
         print(self.scores)
 
+        self.scores[fp] = [index, score, comments, polygons, username]
 
-        self.scores[self.h5[id]] = [id, score, comments, polygons, username]
-
-        from snaprate import settings
-        import pandas as pd
-        fn = op.join(settings.STATIC_PATH, 'annotations.xlsx')
-        log.info('Writing %s...' % fn)
-        data = []
-        for k, v in self.scores.items():
-            row = [k]
-            row.extend(v[:-2])
-            row.append(json.dumps(v[-2]))
-            row.append(v[-1])
-            data.append(row)
-        columns = ['fp', 'id', 'score', 'comments', 'polygons', 'username']
-        df = pd.DataFrame(data, columns=columns).set_index('fp').sort_index()
-        df.to_excel(fn)
-
-        # self.update(score, comments, subject,
-        #             self.subjects[pipeline],
-        #             self.scores[pipeline][username],
-        #             fn)
+        self.save(self.scores)
 
         if then == 'next':
-            id = id + 1 if id < n_subjects - 1 else 0
+            index = index + 1 if index < n_cases - 1 else 0
         elif then == 'prev':
-            id = id - 1 if id > 0 else n_subjects - 1
+            index = index - 1 if index > 0 else n_cases - 1
+        elif then == 'same':
+            print('SAME');
 
-        log.info('Next subject: %s (%s)'
-                 % (self.h5[id], id))
-        jf = self.process_h5(self.h5[id])
-        scores = self.scores.get(self.h5[id], [None, '', '', [], None])
+        fp = self.h5[index]
+        log.info('Next image: %s (%s)' % (fp, index))
+        jf = self.snap(fp)
 
-        print('NEW ID', id, scores)
-        id, score, comment, polygons, username = scores
-        self.write(json.dumps([id, jf, polygons, comment, score]))
+        blank = [None, '', '', [], None]
+        scores = self.scores.get(fp, blank)
+        index, score, comment, polygons, username = scores
+
+        res = [index, jf, polygons, comment, score]
+        self.write(json.dumps(res))
 
     def initialize(self, **kwargs):
         _initialize(self, **kwargs)
 
 
-class MainHandler(BaseHandler, utils.HTMLFactory, utils.H5Manager):
+class MainHandler(BaseHandler, utils.HTMLFactory, utils.SnapshotMaker):
 
     @tornado.web.authenticated
     def get(self):
-        id = int(self.get_argument('id', 0))  # get subject index
+        index = int(self.get_argument('i', 0))  # get subject index
         username = str(self.current_user[1:-1], 'utf-8')
         n_subjects = len(self.h5)
 
-        rate_code = self.rate_code(id, n_subjects, username)
-        jf = self.process_h5(self.h5[id])
-        scores = self.scores.get(self.h5[id], None)
-        polygons = []
-        if scores is not None:
-            polygons = scores[-2]
+        rate_code = self.rate_code(index, self.h5, username)
 
-        args = {'danger': '',
-                'datasource': '',
-                'database': '/tmp',
-                'rate_subjects': rate_code,
-                'n_subjects': len(self.h5),
-                'index': id,
+        fp = self.h5[max(index, 0)]
+        jf = self.snap(fp)
+        scores = self.scores.get(fp, None)
+
+        if index == -1:
+            jf = self.static_url('tests/sydney.jpg')
+
+        polygons = scores[-2] if scores is not None else []
+
+        args = {'rate_subjects': rate_code,
+                'h5': json.dumps(self.h5),
+                'index': index,
                 'polygons': json.dumps(polygons),
-                'images': '',
                 'jf': jf}
 
         log.info('User %s has given following scores: %s'
                  % (username, scores))
         self.render("html/index.html", username=username, **args)
-
-    def initialize(self, **kwargs):
-        _initialize(self, **kwargs)
-
-
-class PipelineHandler(BaseHandler):
-
-    @tornado.web.authenticated
-    def post(self):
-
-        pipelines = list(self.snapshots.keys())
-        pipeline = self.get_argument('pipeline', None)  # get pipeline name
-        id = int(self.get_argument('id', 1))  # get subject index
-        username = str(self.current_user[1:-1], 'utf-8')
-        current_subject = self.subjects[pipeline][id - 1]
-        other_pipelines = utils.other_pipelines(current_subject,
-                                                pipeline,
-                                                self.subjects)
-        self.write(other_pipelines)
-
-    def initialize(self, **kwargs):
-        _initialize(self, **kwargs)
-
-
-class StatsHandler(BaseHandler):
-    @tornado.web.authenticated
-    def get(self):
-        from .stats import get_stats
-
-        pipelines = list(self.snapshots.keys())
-        pipeline = self.get_argument('s', None)
-
-        # fp = op.join(self.wd, 'users.json')
-
-        if pipeline is None:
-            html = ''
-            for each in pipelines:
-                row = '<div><a href="%s">%s</a>: %s</div><br>'
-                res = get_stats(self.wd, each)
-                row = row % ('/stats/?s=%s' % each, each, '%.2f' % float(res[1]))
-                html = html + row
-
-            self.render('html/stats.html', table=html, total_counter='',
-                        comments='')
-            return
-
-        res = get_stats(self.wd, pipeline)
-        review, total_pc, total_reviews, comments = res
-
-        total_counter = '''<h2><span class="timer count-title count-number" data-to="{total_pc}"
-            data-speed="1500" data-decimals="3"></span><span> % of snapshots
-            have been reviewed</span></h2>'''.format(total_pc=total_pc)
-
-        self.render('html/stats.html', table=review,
-                    total_counter=total_counter, comments=comments)
-
-    def initialize(self, **kwargs):
-        _initialize(self, **kwargs)
-
-
-class XNATHandler(BaseHandler):
-    @tornado.web.authenticated
-    def post(self):
-        src = self.get_argument('src')
-        import os.path as op
-        eid = op.basename(src).split('?')[0].split('.')[0]
-
-        url = 'https://xnat.barcelonabeta.org/data/'\
-            'experiments/%s?format=html' % eid
-        self.write('"%s"' % eid)
 
     def initialize(self, **kwargs):
         _initialize(self, **kwargs)

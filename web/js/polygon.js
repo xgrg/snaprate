@@ -54,7 +54,6 @@ function handleDrag() {
 }
 
 function getRandomColor() {
-  console.log(howmany_polygons)
   if (howmany_polygons < colors.length) {
     return colors[howmany_polygons];
   } else {

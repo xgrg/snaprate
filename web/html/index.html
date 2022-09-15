@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 
-
-
 <html lang="en">
 
 <head>
@@ -24,9 +22,6 @@
   <script src="{{static_url("js/utils.js")}}"></script>
   <script src="{{static_url("js/buttons.js")}}"></script>
   <script src="{{static_url("js/polygon.js")}}"></script>
-
-
-
 </head>
 
 <body>
@@ -37,12 +32,12 @@
   <hr>
 
   <script>
-  {{images}}
 
+
+  h5 = JSON.parse('{{h5}}');
   index = {{index}};
-  n_subjects = {{n_subjects}};
+  n_cases = h5.length;
   polygons = JSON.parse("{{polygons}}");
-  console.log(polygons)
 
 
   // Handling buttons (buttons.js)
@@ -50,19 +45,29 @@
   id = $(this).attr('id');
   e.preventDefault();
 
-  if (id == "prevsubj") {
+  if (id == "prevcase") {
   onclick_prev();
   }
-  else if (id == "nextsubj"){
+  else if (id == "nextcase"){
   onclick_next();
+  }
+  else if (id=="reset"){
+  polygon = [];
+  howmany_polygons = 0;
+  save_subject("same");
+  $("span#index").text(index);
+  console.log(index, h5[index], polygons)
+
+
+
   }
   return false;
   });
 
   $('a#logout').unbind('click')
   $('a#stats').unbind('click')
-  $('a#download').unbind('click')
   $("#score").click(cycle_button);
+  $('a#download').unbind('click')
 
 
   // Handling keys
@@ -85,7 +90,7 @@
   onclick_prev();
   }
   };
-  showImage();
+  $("span#index").text(index);
 
   </script>
 

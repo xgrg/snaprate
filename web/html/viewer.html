@@ -2,8 +2,8 @@
 <div class="container">
     <button class="btn btn-info">
         subject #
-        <span class="badge badge-light" id="subject_number">{id}</span>
-        /<span class="badge badge-light">{n_subjects}</span>
+        <span class="badge badge-light" id="index">{index}</span>
+        /<span class="badge badge-light">{n_cases}</span>
     </button>
     {test_section}
 
@@ -16,12 +16,14 @@
     <input class="form-control" placeholder="Your comment" type="text" name="lname" value="{comment}">
 </div>
 <div class="container">
-    <a class="btn btn-primary" id="prevsubj" href="">
-        previous subject</a>
-    <a class="btn btn-primary" id="nextsubj" href="">
-        next subject</a>
-    <!-- <a class="btn btn-info" id="download" href="/download/">
-        download</a> -->
+    <a class="btn btn-primary" id="prevcase" href="">
+        previous case</a>
+    <a class="btn btn-primary" id="nextcase" href="">
+        next case</a>
+    <a class="btn btn-info" id="reset" href="">
+        reset</a>
+    <a class="btn btn-info" id="download" href="/download/">
+        download</a>
     <a class="btn btn-danger" id="logout" href="/auth/logout/">
         logout</a>
     <!--<a class="btn btn-primary" id="stats" href="/stats/">
