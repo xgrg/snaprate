@@ -140,8 +140,3 @@ function save(then) {
     });
   })
 }
-
-function clear_polygons(){
-  save('same');
-  console.log(index, h5[index], polygons)
-}

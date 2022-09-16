@@ -50,7 +50,8 @@
       } else if (id == "nextcase") {
         save('next')
       } else if (id == "clear") {
-        clear_polygons();
+        d3.selectAll('g').remove();
+        save('same');
       }
       return false;
     });
