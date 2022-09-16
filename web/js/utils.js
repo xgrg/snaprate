@@ -8,6 +8,15 @@ $.urlParam = function(name) {
   }
 }
 
+
+function handling_keys(e) {
+  e = e || window.event;
+  if (e.ctrlKey && e.which == 83) {
+    e.preventDefault();
+    window.location.href = "download/?s=" + $.urlParam('s');
+  }
+};
+
 function validate() {
   ans = $('input').val();
   if (ans.indexOf('"') > -1) {
@@ -82,41 +91,57 @@ function get_score() {
   }
 }
 
-function save_subject(then) {
-  Pace.track(function(){
+function save(then) {
+  // Disable buttons to avoid multiple requests in a row
+  $('#nextcase').addClass("disabled");
+  $('#prevcase').addClass("disabled");
 
-  $.ajax({
-    type: "POST",
-    url: "/post/",
-    data: {
-      "score": get_score(),
-      "comments": $('input').val(),
-      "polygons": JSON.stringify(polygons),
-      "index": index,
-      "then": then
-    },
-    dataType: 'json',
-    success: function(data) {
-      console.log('data', data)
-      id = data[0];
-      fp = data[1];
-      points = [];
-      d3.selectAll('g').remove();
-      d3.select('image').attr("xlink:href", fp);
-      polygons = data[2]
+  console.log("Pushing polygons:", polygons, 'for index', index)
 
-      $('input').val(data[3]);
-      color_button(data[4]);
+  Pace.track(function() {
 
-      howmany_polygons = 0;
-      drawPoly(polygons);
+    $.ajax({
+      type: "POST",
+      url: "/post/",
+      data: {
+        "score": get_score(),
+        "comments": $('input').val(),
+        "polygons": JSON.stringify(collect_polygons()),
+        "index": index,
+        "then": then
+      },
+      dataType: 'json',
+      success: function(data) {
 
-      $('#nextcase').removeClass("disabled");
-      $('#prevcase').removeClass("disabled");
+        console.log('data', data)
+        // Update index
+        index = data['index'];
+        $("span#index").text(index);
 
-      return data;
+        // Update snapshot
+        fp = data['snapshot'];
+        d3.select('image').attr("xlink:href", fp);
 
-    }
-  });
-})
+        // Update comments and score
+        $('input').val(data['comment']);
+        color_button(data['score']);
+
+        // Update polygons
+        polygons = data['polygons'];
+        update_polygons(polygons);
+
+        // Reactivate buttons
+        $('#nextcase').removeClass("disabled");
+        $('#prevcase').removeClass("disabled");
+
+        return data;
+
+      }
+    });
+  })
+}
+
+function clear_polygons(){
+  save('same');
+  console.log(index, h5[index], polygons)
 }

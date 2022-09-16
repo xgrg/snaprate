@@ -7,7 +7,7 @@ TEMPLATE_PATH = op.join(DIRNAME, 'web')
 import logging as log
 import sys
 #log linked to the standard error stream
-log.basicConfig(level=log.DEBUG,
+log.basicConfig(level=log.INFO,
     format='%(asctime)s - %(levelname)-8s - %(message)s',
     datefmt='%d/%m/%Y %Hh%Mm%Ss')
 console = log.StreamHandler(sys.stderr)

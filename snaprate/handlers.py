@@ -143,22 +143,26 @@ class PostHandler(BaseHandler, utils.ScoreManager, utils.SnapshotMaker):
 
         self.save(self.scores)
 
+        # Update index
+        new_index = index
         if then == 'next':
-            index = index + 1 if index < n_cases - 1 else 0
-        elif then == 'prev':
-            index = index - 1 if index > 0 else n_cases - 1
-        elif then == 'same':
-            print('SAME');
+            new_index = index + 1 if index < n_cases - 1 else 0
+        elif then == 'previous':
+            new_index = index - 1 if index > 0 else n_cases - 1
 
-        fp = self.h5[index]
-        log.info('Next image: %s (%s)' % (fp, index))
+        # Get snapshot
+        fp = self.h5[new_index]
+        log.info('Next image: %s (%s)' % (fp, new_index))
         jf = self.snap(fp)
 
+        # Get annotation info if available and return it
         blank = [None, '', '', [], None]
         scores = self.scores.get(fp, blank)
-        index, score, comment, polygons, username = scores
+        _, score, comment, polygons, username = scores
 
-        res = [index, jf, polygons, comment, score]
+        res = {'index':new_index, 'snapshot':jf,
+            'polygons': polygons, 'comment': comment,
+            'score':score}
         self.write(json.dumps(res))
 
     def initialize(self, **kwargs):

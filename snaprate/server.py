@@ -15,9 +15,7 @@ def collect_hdf5(wd): #, subjects):
     from glob import glob
     import os.path as op
     h5 = sorted(glob(op.join(wd, '*.h5')))
-
     log.info('%s h5 found' % len(h5))
-
     return h5
 
 class Application(tornado.web.Application):
