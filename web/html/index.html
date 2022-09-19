@@ -27,7 +27,7 @@
 
   <svg></svg>
 
-  {{rate_subjects}}
+  {{rate_code}}
   <hr>
 
   <script>
@@ -79,11 +79,7 @@
     .attr('width', 1000)
     .attr('height', 1000)
 
-  var points = [];
-  var dragging = false,
-    drawing = false,
-    startPoint;
-  colors = ['#f5725b77', '#7593e077']
+
 
   initialize_polygons(svg);
   drawPoly(polygons);

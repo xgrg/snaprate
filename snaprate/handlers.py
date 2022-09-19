@@ -189,7 +189,7 @@ class MainHandler(BaseHandler, utils.HTMLFactory, utils.SnapshotMaker):
             jf = self.static_url('tests/sydney.jpg')
             polygons = []
 
-        args = {'rate_subjects': rate_code,
+        args = {'rate_code': rate_code,
                 'h5': json.dumps(self.h5),
                 'index': index,
                 'polygons': json.dumps(polygons),

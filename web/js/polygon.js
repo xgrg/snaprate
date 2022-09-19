@@ -1,4 +1,8 @@
-
+var points = [];
+var dragging = false,
+  drawing = false,
+  startPoint;
+colors = ['#f5725b77', '#7593e077']
 
 function closePolygon() {
   console.log('Points en début de close:', points);
