@@ -183,10 +183,11 @@ class MainHandler(BaseHandler, utils.HTMLFactory, utils.SnapshotMaker):
         jf = self.snap(fp)
         scores = self.scores.get(fp, None)
 
+        polygons = scores[-2] if scores is not None else []
+
         if index == -1:
             jf = self.static_url('tests/sydney.jpg')
-
-        polygons = scores[-2] if scores is not None else []
+            polygons = []
 
         args = {'rate_subjects': rate_code,
                 'h5': json.dumps(self.h5),
