@@ -97,7 +97,7 @@ function drawPoly(polygons) {
   }
 }
 
-function update_polygons(polygons){
+function update_polygons(polygons) {
   howmany_polygons = 0;
   d3.selectAll('g').remove();
   initialize_polygons();
@@ -105,84 +105,106 @@ function update_polygons(polygons){
 
 }
 
-function collect_polygons(){
-    polygons = $('polygon');
-    p = []
-    for (var i=0 ; i < polygons.length ; i++){
-        polygon = []
-        for (var j=0 ; j < polygons[i].animatedPoints.length ; j++){
-            pt = polygons[i].animatedPoints[j]
-            polygon.push([pt['x'], pt['y']])
+function collect_polygons() {
+  polygons = $('polygon');
+  p = []
+  for (var i = 0; i < polygons.length; i++) {
+    polygon = []
+    for (var j = 0; j < polygons[i].animatedPoints.length; j++) {
+      pt = polygons[i].animatedPoints[j]
+      polygon.push([pt['x'], pt['y']])
 
-        }
-        p.push(polygon);
     }
-    return p;
+    p.push(polygon);
+  }
+  return p;
 }
 
-
-function initialize_polygons(){
-    svg = d3.select('svg');
-
-    points = [];
-    // behaviors
-
-    svg.on('mouseup', function() {
-      console.log('dragging:', dragging, 'drawing:', drawing)
-      if (dragging) return;
-      drawing = true;
-      startPoint = [d3.mouse(this)[0], d3.mouse(this)[1]];
-      if (svg.select('g.drawPoly').empty()) g = svg.append('g').attr('class', 'drawPoly');
-
-      if (d3.event.target.hasAttribute('is-handle')) {
-        if (points.length > 2){
-          closePolygon();
-          return;
-        }
-        else if (drawing){
-          alert('needs more than 2 points');
-          return;
-        }
-      };
-
-      points.push(d3.mouse(this));
-
-      g.select('polyline').remove();
-      var polyline = g.append('polyline').attr('points', points)
-        .style('fill', 'none')
-        .attr('stroke', '#000');
-
-      for (var i = 0; i < points.length; i++) {
-        g.append('circle')
-          .attr('cx', points[i][0])
-          .attr('cy', points[i][1])
-          .attr('r', 4)
-          .attr('fill', 'yellow')
-          .attr('stroke', '#000')
-          .attr('is-handle', 'true')
-          .style({
-            cursor: 'pointer'
-          });
+function find_point(x, y){
+  min_point = -1
+  dist = 1000;
+  polygons = $('polygon');
+  for (var i = 0; i < polygons.length; i++) {
+    for (var j = 0; j < polygons[i].animatedPoints.length; j++) {
+      pt = polygons[i].animatedPoints[j]
+      a = pt['x'] - x;
+      b = pt['y'] - y;
+      var c = Math.sqrt( a*a + b*b );
+      if (c<dist){
+        dist = c
+        min_index = [pt, i,j];
       }
+    }
+  }
+  return min_index;
+}
+
+function initialize_polygons() {
+  svg = d3.select('svg');
+
+  points = [];
+  // behaviors
+
+  svg.on('mouseup', function() {
+    console.log('dragging:', dragging, 'drawing:', drawing)
+    if (dragging)
+      return;
+
+    if (d3.event.target.hasAttribute('is-handle')) {
+      if (!drawing & d3.event.shiftKey) {
+        res = find_point(d3.mouse(this)[0], d3.mouse(this)[1]);
+        polygons = collect_polygons();
+        if (polygons[res[1]].length>3)
+          polygons[res[1]].splice(res[2], 1);
+        update_polygons(polygons);
+      }
+      if (points.length > 2)
+        closePolygon();
+      return;
+    };
+    drawing = true;
+    startPoint = [d3.mouse(this)[0], d3.mouse(this)[1]];
+    if (svg.select('g.drawPoly').empty()) g = svg.append('g').attr('class', 'drawPoly');
+
+
+    points.push(d3.mouse(this));
+
+    g.select('polyline').remove();
+    var polyline = g.append('polyline').attr('points', points)
+      .style('fill', 'none')
+      .attr('stroke', '#000');
+
+    for (var i = 0; i < points.length; i++) {
+      g.append('circle')
+        .attr('cx', points[i][0])
+        .attr('cy', points[i][1])
+        .attr('r', 4)
+        .attr('fill', 'yellow')
+        .attr('stroke', '#000')
+        .attr('is-handle', 'true')
+        .style({
+          cursor: 'pointer'
+        });
+    }
+  });
+
+  svg.on('mousemove', function() {
+    if (!drawing) return;
+    var g = d3.select('g.drawPoly');
+    g.select('line').remove();
+    var line = g.append('line')
+      .attr('x1', startPoint[0])
+      .attr('y1', startPoint[1])
+      .attr('x2', d3.mouse(this)[0] + 2)
+      .attr('y2', d3.mouse(this)[1])
+      .attr('stroke', '#53DBF3')
+      .attr('stroke-width', 1);
+  })
+
+  dragger = d3.behavior.drag()
+    .on('drag', handleDrag)
+    .on('dragend', function(d) {
+      dragging = false;
     });
 
-    svg.on('mousemove', function() {
-      if (!drawing) return;
-      var g = d3.select('g.drawPoly');
-      g.select('line').remove();
-      var line = g.append('line')
-        .attr('x1', startPoint[0])
-        .attr('y1', startPoint[1])
-        .attr('x2', d3.mouse(this)[0] + 2)
-        .attr('y2', d3.mouse(this)[1])
-        .attr('stroke', '#53DBF3')
-        .attr('stroke-width', 1);
-    })
-
-    dragger = d3.behavior.drag()
-      .on('drag', handleDrag)
-      .on('dragend', function(d) {
-        dragging = false;
-      });
-
-  }
+}
