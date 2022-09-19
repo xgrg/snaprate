@@ -137,9 +137,9 @@ class PostHandler(BaseHandler, utils.ScoreManager, utils.SnapshotMaker):
 
         fp = self.h5[index]
         print('Previous image (%s): %s' % (index, fp))
-        print(self.scores)
 
         self.scores[fp] = [index, score, comments, polygons, username]
+        print(self.scores)
 
         self.save(self.scores)
 

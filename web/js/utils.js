@@ -95,7 +95,7 @@ function save(then) {
   // Disable buttons to avoid multiple requests in a row
   $('#nextcase').addClass("disabled");
   $('#prevcase').addClass("disabled");
-
+  polygons = collect_polygons();
   console.log("Pushing polygons:", polygons, 'for index', index)
 
   Pace.track(function() {
@@ -106,7 +106,7 @@ function save(then) {
       data: {
         "score": get_score(),
         "comments": $('input').val(),
-        "polygons": JSON.stringify(collect_polygons()),
+        "polygons": JSON.stringify(polygons),
         "index": index,
         "then": then
       },

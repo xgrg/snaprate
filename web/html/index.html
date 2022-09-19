@@ -38,7 +38,7 @@
     $("span#index").text(index);
 
     n_cases = h5.length;
-    polygons = JSON.parse("{{polygons}}");
+    polygons = JSON.parse('{{polygons}}');
 
     // Handling buttons (buttons.js)
     $("a").click(function(e) {
@@ -82,9 +82,10 @@
 
 
   initialize_polygons(svg);
+  console.log('Loading polygons:', polygons)
   drawPoly(polygons);
 
-  console.log('Loading polygons:', polygons)
+
 
 </script>
 

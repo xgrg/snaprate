@@ -5,12 +5,14 @@ var dragging = false,
 colors = ['#f5725b77', '#7593e077']
 
 function closePolygon() {
+  default_label = 0
+  c = getColor(default_label);
   console.log('Points en début de close:', points);
   svg.select('g.drawPoly').remove();
   var g = svg.append('g');
   g.append('polygon')
     .attr('points', points)
-    .style('fill', getRandomColor());
+    .style('fill', c);
   for (var i = 0; i < points.length; i++) {
     var circle = g.selectAll('circles')
       .data([points[i]])
@@ -30,8 +32,17 @@ function closePolygon() {
 
   points.splice(0);
   drawing = false;
-  howmany_polygons += 1;
   console.log('Points en fin de close:', points);
+
+  // adding button
+  c = c.substring(0, c.length - 2);
+  polygons = collect_polygons();
+  name = '#' + polygons.length;
+  html = '<button type="button" class="btn btn-dark" '+
+    'data-value="' + default_label + '" style="background-color:'
+    + c + '">'+ name + '</button>';
+  $(html).insertAfter("#casenumber")
+
 }
 
 function handleDrag() {
@@ -52,9 +63,9 @@ function handleDrag() {
   poly.attr('points', newPoints);
 }
 
-function getRandomColor() {
-  if (howmany_polygons < colors.length) {
-    return colors[howmany_polygons];
+function getColor(i) {
+  if (i < colors.length) {
+    return colors[i];
   } else {
     var letters = '0123456789ABCDEF'.split('');
     var color = '#';
@@ -67,13 +78,13 @@ function getRandomColor() {
 }
 
 function drawPoly(polygons) {
-  howmany_polygons = 0
-  for (var j = 0; j < polygons.length; j++) {
-    points = polygons[j];
+  for (var j = 0; j < polygons.length ; j++) {
+    points = polygons[j]['polygon'];
+    label = polygons[j]['label'];
     g = svg.append('g');
     g.append('polygon')
       .attr('points', points)
-      .style('fill', getRandomColor());
+      .style('fill', getColor(label));
     for (var i = 0; i < points.length; i++) {
       var circle = g.selectAll('circles')
         .data([points[i]])
@@ -91,14 +102,21 @@ function drawPoly(polygons) {
     }
     points.splice(0);
     drawing = false;
-    howmany_polygons += 1;
 
-
+    // adding buttons
+    c = getColor(label);
+    c = c.substring(0, c.length - 2);
+    name = '#' + (j+1);
+    html = '<button type="button" class="btn btn-dark" '+
+      'data-value=' + label +
+      ' style="background-color:'
+      + c + '">'+ name + '</button>';
+    $(html).insertAfter("#casenumber")
   }
 }
 
 function update_polygons(polygons) {
-  howmany_polygons = 0;
+  $("#firstline button.btn.btn-dark").remove();
   d3.selectAll('g').remove();
   initialize_polygons();
   drawPoly(polygons);
@@ -108,6 +126,10 @@ function update_polygons(polygons) {
 function collect_polygons() {
   polygons = $('polygon');
   p = []
+  labels = []
+  $('#firstline button.btn.btn-dark').each(function(){
+    labels.push($(this).attr('data-value'));
+  })
   for (var i = 0; i < polygons.length; i++) {
     polygon = []
     for (var j = 0; j < polygons[i].animatedPoints.length; j++) {
@@ -115,7 +137,7 @@ function collect_polygons() {
       polygon.push([pt['x'], pt['y']])
 
     }
-    p.push(polygon);
+    p.push({'polygon':polygon, 'label': labels[i]});
   }
   return p;
 }
@@ -157,21 +179,22 @@ function initialize_polygons() {
           console.log(res)
           polygons = collect_polygons();
 
-          if (polygons[res[1]].length > 3)
-            polygons[res[1]].splice(res[2], 1);
+          if (polygons[res[1]]['polygon'].length > 3)
+            polygons[res[1]]['polygon'].splice(res[2], 1);
           update_polygons(polygons);
         }
         else if (d3.event.ctrlKey){
           polygons = collect_polygons();
           res = find_point(d3.mouse(this)[0], d3.mouse(this)[1]);
+          console.log(res)
           polygons = collect_polygons();
-          if (res[2] > 1)
-            next_vtx = polygons[res[1]][res[2]-1];
+          if (res[2] > 0)
+            next_vtx = polygons[res[1]]['polygon'][res[2]-1];
           else
-            next_vtx = polygons[res[1]][polygons[res[1]].length - 1];
+            next_vtx = polygons[res[1]]['polygon'][polygons[res[1]]['polygon'].length - 1];
           x = (res[0]['x'] + next_vtx[0])/2.0
           y = (res[0]['y'] + next_vtx[1])/2.0
-          polygons[res[1]].splice(res[2], 0, [x,y])
+          polygons[res[1]]['polygon'].splice(res[2], 0, [x,y])
           update_polygons(polygons);
         }
       }
