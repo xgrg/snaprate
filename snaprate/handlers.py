@@ -189,11 +189,15 @@ class MainHandler(BaseHandler, utils.HTMLFactory, utils.SnapshotMaker):
             jf = self.static_url('tests/sydney.jpg')
             polygons = []
 
+        fp1 = op.join(op.dirname(__file__), '../web/html/modal.html')
+        modals = open(fp1).read()
+
         args = {'rate_code': rate_code,
                 'h5': json.dumps(self.h5),
                 'index': index,
                 'polygons': json.dumps(polygons),
-                'jf': jf}
+                'jf': jf,
+                'modals': modals}
 
         log.info('User %s has given following scores: %s'
                  % (username, scores))
