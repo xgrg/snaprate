@@ -120,7 +120,7 @@ function collect_polygons() {
   return p;
 }
 
-function find_point(x, y){
+function find_point(x, y) {
   min_point = -1
   dist = 1000;
   polygons = $('polygon');
@@ -129,10 +129,10 @@ function find_point(x, y){
       pt = polygons[i].animatedPoints[j]
       a = pt['x'] - x;
       b = pt['y'] - y;
-      var c = Math.sqrt( a*a + b*b );
-      if (c<dist){
+      var c = Math.sqrt(a * a + b * b);
+      if (c < dist) {
         dist = c
-        min_index = [pt, i,j];
+        min_index = [pt, i, j];
       }
     }
   }
@@ -151,16 +151,34 @@ function initialize_polygons() {
       return;
 
     if (d3.event.target.hasAttribute('is-handle')) {
-      if (!drawing & d3.event.shiftKey) {
-        res = find_point(d3.mouse(this)[0], d3.mouse(this)[1]);
-        polygons = collect_polygons();
-        if (polygons[res[1]].length>3)
-          polygons[res[1]].splice(res[2], 1);
-        update_polygons(polygons);
+      if (!drawing) {
+        if (d3.event.shiftKey) {
+          res = find_point(d3.mouse(this)[0], d3.mouse(this)[1]);
+          console.log(res)
+          polygons = collect_polygons();
+
+          if (polygons[res[1]].length > 3)
+            polygons[res[1]].splice(res[2], 1);
+          update_polygons(polygons);
+        }
+        else if (d3.event.ctrlKey){
+          polygons = collect_polygons();
+          res = find_point(d3.mouse(this)[0], d3.mouse(this)[1]);
+          polygons = collect_polygons();
+          if (res[2] > 1)
+            next_vtx = polygons[res[1]][res[2]-1];
+          else
+            next_vtx = polygons[res[1]][polygons[res[1]].length - 1];
+          x = (res[0]['x'] + next_vtx[0])/2.0
+          y = (res[0]['y'] + next_vtx[1])/2.0
+          polygons[res[1]].splice(res[2], 0, [x,y])
+          update_polygons(polygons);
+        }
       }
       if (points.length > 2)
         closePolygon();
       return;
+
     };
     drawing = true;
     startPoint = [d3.mouse(this)[0], d3.mouse(this)[1]];
