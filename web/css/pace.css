@@ -1,75 +1,3 @@
-/* Move down content because we have a fixed navbar that is 50px tall */
-body {
-   padding-top: 50px;
-   padding-bottom: 20px;
-   background-color:black;
-   color:white;
-}
-
-div.container{
-   margin-left:50px;
-   //width:100%;
-}
-
-img.subject{
-
-   width:100%;
-   display:none
-}
-
-.starter-template {
-   padding: 40px 15px;
-   text-align: justify;
-}
-
-input{
-   color:black;
-}
-
-#image-gallery {
-   width: 100%;
-   position: relative;
-   height: 650px;
-   background: #000;
-}
-
-#image-gallery .image-container {
-   position: absolute;
-   top: 0;
-   left: 0;
-   right: 0;
-   bottom: 50px;
-}
-
-#image-gallery .prev,
-#image-gallery .next {
-   position: absolute;
-   height: 32px;
-   margin-top: -66px;
-   top: 50%;
-}
-
-#image-gallery .prev {
-   left: 20px;
-}
-
-#image-gallery .next {
-   right: 20px;
-   cursor: pointer;
-}
-
-#image-gallery .footer-info {
-   position: absolute;
-   height: 50px;
-   width: 100%;
-   left: 0;
-   bottom: 0;
-   line-height: 50px;
-   font-size: 24px;
-   text-align: center;
-   color: white;
-   border-top: 1px solid #fff;
-}
 
 
 .pace {
@@ -142,6 +70,7 @@ input{
   -ms-box-shadow: 120px 0 #fff, 240px 0 #fff;
   box-shadow: 120px 0 #fff, 240px 0 #fff;
 }
+
 
 .pace .pace-progress:after {
   content: attr(data-progress-text);

@@ -1,20 +1,33 @@
 <div id="polygonModal" class="modal fade" role="dialog">
+  <style type="text/css">
+    div {color:black};
+    </style>
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 id="itemtitle" class="modal-title"></h5>
+        <h5 id="itemtitle" class="modal-title">Edit polygon</h5>
         <button type="button" class="close" data-bs-dismiss="modal">&times;</button>
       </div>
       <div class="modal-body">
-        <input id="textbox" input class="form-control" list="whattobuy" name="browser">
-        <datalist id="whattobuy">
-        </datalist>
-      </div>
-      <div class="modal-footer">
-        <button id="add" type="button" class="btn btn-success" data-bs-dismiss="modal">Ajouter</button>
-        <button id="delete" type="button" class="btn btn-danger" data-bs-dismiss="modal">Supprimer</button>
+        <p>
+          <label id="label" for="label">Assigned label:</label>
 
-        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Fermer</button>
+          <select class="form-select" aria-label="Default select example">            
+            <option selected value="0">Pectoral</option>
+            <option value="2">Breast</option>
+            <option value="3">Background</option>
+            <option value="4">Mass</option>
+            <option value="5">Doge</option>
+          </select>
+        </p>
+
+      </div>
+
+      <div class="modal-footer">
+        <button id="use" type="button" class="btn btn-danger" data-bs-dismiss="modal">Remove polygon</button>
+        <span>&nbsp;&nbsp;&nbsp;</span>
+        <button id="use" type="button" class="btn btn-success" data-bs-dismiss="modal">Save</button>
+        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Cancel</button>
       </div>
     </div>
   </div>

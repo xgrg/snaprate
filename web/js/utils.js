@@ -96,27 +96,30 @@ function save(then) {
   $('#nextcase').addClass("disabled");
   $('#prevcase').addClass("disabled");
   polygons = collect_polygons();
-  console.log("Pushing polygons:", polygons, 'for index', index)
+
+  data = {
+    score: get_score(),
+    comments: $('input').val(),
+    polygons: JSON.stringify(polygons),
+    index: caseNumber,
+    then: then
+  }
+
+  console.log('Pushing data', data, 'for index', caseNumber)
+
 
   Pace.track(function() {
-
     $.ajax({
       type: "POST",
       url: "/post/",
-      data: {
-        "score": get_score(),
-        "comments": $('input').val(),
-        "polygons": JSON.stringify(polygons),
-        "index": index,
-        "then": then
-      },
+      data: data,
       dataType: 'json',
       success: function(data) {
+        console.log('Next case', data)
 
-        console.log('data', data)
         // Update index
-        index = data['index'];
-        $("span#index").text(index);
+        caseNumber = data['index'];
+        $("span#index").text(caseNumber);
 
         // Update snapshot
         fp = data['snapshot'];

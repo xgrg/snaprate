@@ -39,9 +39,14 @@ function closePolygon() {
   polygons = collect_polygons();
   name = '#' + polygons.length;
   html = '<button type="button" class="btn btn-dark" '+
-    'data-value="' + default_label + '" style="background-color:'
-    + c + '">'+ name + '</button>';
+    'data-value="' + default_label + '" data-index="' + polygons.length +
+    '" style="background-color:' + c + '">'+ name + '</button>';
   $(html).insertAfter("#casenumber")
+  $('#firstline button.btn.btn-dark').click(function(){
+    console.log($(this).attr("data-value"));
+    console.log($(this).text());
+    $('#polygonModal').modal('show');
+  });
 
 }
 
@@ -108,8 +113,8 @@ function drawPoly(polygons) {
     c = c.substring(0, c.length - 2);
     name = '#' + (j+1);
     html = '<button type="button" class="btn btn-dark" '+
-      'data-value=' + label +
-      ' style="background-color:'
+      'data-value="' + label + '" data-index="' + (j+1) +
+      '" style="background-color:'
       + c + '">'+ name + '</button>';
     $(html).insertAfter("#casenumber")
   }
@@ -165,7 +170,6 @@ function initialize_polygons() {
   svg = d3.select('svg');
 
   points = [];
-  // behaviors
 
   svg.on('mouseup', function() {
     console.log('dragging:', dragging, 'drawing:', drawing)
