@@ -37,6 +37,8 @@
 
     // Parse data from server
     h5 = JSON.parse('{{h5}}');
+    colors = JSON.parse('{{colors}}');
+    console.log(colors);
     caseNumber = {{index}};
     $("span#index").text(caseNumber);
 
@@ -67,6 +69,24 @@
     // Handling keys
     document.onkeydown = function(e) { handling_keys(e); }
 
+    $('#polygonModal #save').click(function() {
+      index = $(this).closest('#polygonModal').attr('data-index');
+      polygons = collect_polygons();
+      polygons[index-1]['label'] = $("#selectlabel").val();
+      $('#firstline button.btn.btn-dark').click(function(){
+        detailsPolygon($(this));
+      });
+      update_polygons(polygons);
+    });
+
+    $('#polygonModal #remove').click(function() {
+      index = $(this).closest('#polygonModal').attr('data-index');
+      polygons = collect_polygons();
+      polygons.splice(index - 1, 1);
+      update_polygons(polygons);
+    });
+
+
   </script>
 
 </body>
@@ -85,10 +105,6 @@
   initialize_polygons(svg);
   console.log('Loading polygons:', polygons)
   drawPoly(polygons);
-
-  $('#firstline button.btn.btn-dark').click(function(){
-    detailsPolygon($(this));
-  });
 
 </script>
 

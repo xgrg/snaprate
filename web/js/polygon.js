@@ -2,17 +2,14 @@ var points = [];
 var dragging = false,
   drawing = false,
   startPoint;
-colors = ['#f5725b77', '#7593e077']
 
-function closePolygon() {
-  default_label = 0
-  c = getColor(default_label);
-  console.log('Points en début de close:', points);
-  svg.select('g.drawPoly').remove();
+
+function drawPolygon(points, color){
+  color = color + '77';
   var g = svg.append('g');
   g.append('polygon')
     .attr('points', points)
-    .style('fill', c);
+    .style('fill', color);
   for (var i = 0; i < points.length; i++) {
     var circle = g.selectAll('circles')
       .data([points[i]])
@@ -29,23 +26,20 @@ function closePolygon() {
       })
       .call(dragger);
   }
-
   points.splice(0);
   drawing = false;
-  console.log('Points en fin de close:', points);
+}
 
-  // adding button
-  c = c.substring(0, c.length - 2);
+function addButton(label) {
+  c = colors[label];
   polygons = collect_polygons();
   name = '#' + polygons.length;
   html = '<button type="button" class="btn btn-dark" '+
-    'data-value="' + default_label + '" data-index="' + polygons.length +
+    'data-value="' + label + '" data-index="' + polygons.length +
     '" style="background-color:' + c + '">'+ name + '</button>';
   $(html).insertAfter("#casenumber")
   $('#firstline button.btn.btn-dark').click(function(){
-    console.log($(this).attr("data-value"));
-    console.log($(this).text());
-    $('#polygonModal').modal('show');
+    detailsPolygon($(this));
   });
 
 }
@@ -68,56 +62,16 @@ function handleDrag() {
   poly.attr('points', newPoints);
 }
 
-function getColor(i) {
-  if (i < colors.length) {
-    return colors[i];
-  } else {
-    var letters = '0123456789ABCDEF'.split('');
-    var color = '#';
-    for (var i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    color += '77';
-    return color;
-  }
-}
-
 function drawPoly(polygons) {
+  html = '';
   for (var j = 0; j < polygons.length ; j++) {
     points = polygons[j]['polygon'];
     label = polygons[j]['label'];
-    g = svg.append('g');
-    g.append('polygon')
-      .attr('points', points)
-      .style('fill', getColor(label));
-    for (var i = 0; i < points.length; i++) {
-      var circle = g.selectAll('circles')
-        .data([points[i]])
-        .enter()
-        .append('circle')
-        .attr('cx', points[i][0])
-        .attr('cy', points[i][1])
-        .attr('r', 4)
-        .attr('fill', '#FDBC07')
-        .attr('stroke', '#000')
-        .attr('is-handle', 'true')
-        .style({
-          cursor: 'move'
-        }).call(dragger);
-    }
-    points.splice(0);
-    drawing = false;
+    drawPolygon(points, colors[label]);
 
-    // adding buttons
-    c = getColor(label);
-    c = c.substring(0, c.length - 2);
-    name = '#' + (j+1);
-    html = '<button type="button" class="btn btn-dark" '+
-      'data-value="' + label + '" data-index="' + (j+1) +
-      '" style="background-color:'
-      + c + '">'+ name + '</button>';
-    $(html).insertAfter("#casenumber")
+    addButton(label);
   }
+
 }
 
 function update_polygons(polygons) {
@@ -202,15 +156,19 @@ function initialize_polygons() {
           update_polygons(polygons);
         }
       }
-      if (points.length > 2)
-        closePolygon();
+      if (points.length > 2){
+        default_label = 0
+        c = colors[default_label];
+        svg.select('g.drawPoly').remove();
+        drawPolygon(points, c);
+        addButton(default_label);
+      }
       return;
 
     };
     drawing = true;
     startPoint = [d3.mouse(this)[0], d3.mouse(this)[1]];
     if (svg.select('g.drawPoly').empty()) g = svg.append('g').attr('class', 'drawPoly');
-
 
     points.push(d3.mouse(this));
 

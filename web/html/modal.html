@@ -1,7 +1,5 @@
 <div id="polygonModal" class="modal fade" role="dialog">
-  <style type="text/css">
-    div {color:black};
-    </style>
+
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -12,21 +10,17 @@
         <p>
           <label id="label" for="label">Assigned label:</label>
 
-          <select class="form-select" aria-label="Default select example">            
-            <option selected value="0">Pectoral</option>
-            <option value="2">Breast</option>
-            <option value="3">Background</option>
-            <option value="4">Mass</option>
-            <option value="5">Doge</option>
+          <select id="selectlabel" class="form-select" aria-label="Select label">
+            {labels}
           </select>
         </p>
 
       </div>
 
       <div class="modal-footer">
-        <button id="use" type="button" class="btn btn-danger" data-bs-dismiss="modal">Remove polygon</button>
+        <button id="remove" type="button" class="btn btn-danger" data-bs-dismiss="modal">Remove polygon</button>
         <span>&nbsp;&nbsp;&nbsp;</span>
-        <button id="use" type="button" class="btn btn-success" data-bs-dismiss="modal">Save</button>
+        <button id="save" type="button" class="btn btn-success" data-bs-dismiss="modal">Save</button>
         <button type="button" class="btn btn-default" data-bs-dismiss="modal">Cancel</button>
       </div>
     </div>

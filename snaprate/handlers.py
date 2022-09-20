@@ -190,14 +190,24 @@ class MainHandler(BaseHandler, utils.HTMLFactory, utils.SnapshotMaker):
             polygons = []
 
         fp1 = op.join(op.dirname(__file__), '../web/html/modal.html')
-        modals = open(fp1).read()
+        fp2 = op.join(op.dirname(__file__), '../web/data/labels.json')
+        labels = json.load(open(fp2))
+
+        html = ''
+        tpl = '<option style="background:%s" value="%s">%s</option>'
+        for k, (label, color) in labels.items():
+            html += tpl % (color, k, label)
+        html = '<option selected ' + html[8:]
+        colors = {k:c for k, (_, c) in labels.items()}
+        modals = open(fp1).read().format(labels=html)
 
         args = {'rate_code': rate_code,
                 'h5': json.dumps(self.h5),
                 'index': index,
                 'polygons': json.dumps(polygons),
                 'jf': jf,
-                'modals': modals}
+                'modals': modals,
+                'colors': json.dumps(colors)}
 
         log.info('User %s has given following scores: %s'
                  % (username, scores))
